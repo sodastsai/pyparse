@@ -15,6 +15,7 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+import dateutil.parser
 import six
 from pyparse import pyparse
 from pyparse.core.base import DictFieldsMixin, AttrFieldsMixin
@@ -63,6 +64,14 @@ class ParseObject(DictFieldsMixin, AttrFieldsMixin):
         for key, value in six.iteritems(raw_parse_object):
             if pyparse.fields_using_snakecase:
                 key = snakecase(key)
+
+            if isinstance(value, six.string_types) and ':' in value and 'T' in value and 'Z' in value and '-' in value:
+                # noinspection PyBroadException
+                try:
+                    value = dateutil.parser.parse(value)
+                except Exception:
+                    value = value
+
             instance._content[key] = value
 
         return instance
