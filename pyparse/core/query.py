@@ -15,6 +15,7 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+from copy import copy
 from pyparse.request import request
 
 
@@ -26,6 +27,7 @@ class ParseQuery(object):
         self._object_class = object_class
         self._class_name = class_name or object_class.get_class_name()
         self._contents = []
+        self._arguments = {}
         self._evaluated = False
 
     @property
@@ -69,6 +71,12 @@ class ParseQuery(object):
         :rtype: ParseQuery
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+
+        order_list = self._arguments.get('order', None)
+        if order_list is None:
+            order_list = []
+            self._arguments['order'] = order_list
+        order_list += args
         return self
 
     def limit(self, limit):
@@ -78,6 +86,7 @@ class ParseQuery(object):
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(limit, int) and 1 <= limit <= 1000, 'limit should be an integer between 1 and 1,000'
+        self._arguments['limit'] = limit
         return self
 
     def offset(self, offset):
@@ -87,13 +96,19 @@ class ParseQuery(object):
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(offset, int) and offset > 0, 'offset should be a positive integer'
+        self._arguments['skip'] = offset
         return self
 
     # Requests
 
-    @property
-    def _arguments(self):
-        return {}
+    def _get_arguments(self, **extra):
+        arguments = copy(self._arguments)
+
+        if 'order' in arguments:
+            arguments['order'] = ','.join(arguments['order'])
+
+        arguments.update(extra)
+        return arguments
 
     @property
     def _request_path(self):
@@ -118,7 +133,7 @@ class ParseQuery(object):
 
     def fetch(self):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
-        contents = request('get', self._request_path, arguments=self._arguments)['results']
+        contents = request('get', self._request_path, arguments=self._get_arguments())['results']
 
         if self._object_class:
             self._contents = [self._object_class.from_parse(content) for content in contents]
@@ -135,6 +150,4 @@ class ParseQuery(object):
         :return: the number of all objects which satisfy this query
         :rtype: int
         """
-        arguments = self._arguments
-        arguments['count'] = '1'
-        return request('get', self._request_path, arguments=arguments)['count']
+        return request('get', self._request_path, arguments=self._get_arguments(count='1'))['count']
