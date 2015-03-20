@@ -15,4 +15,4 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
-from .object import ParseObject
+from pyparse.core.object import Object

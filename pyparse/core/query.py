@@ -23,7 +23,7 @@ from pyparse.request import request
 from pyparse.utils import camelcase
 
 
-class ParseQuery(object):
+class Query(object):
 
     def __init__(self, object_class=None, class_name=None):
         assert object_class or class_name, 'You must assign at least one of ObjectClass and ClassName'
@@ -60,7 +60,7 @@ class ParseQuery(object):
     def all(self):
         """
         :return:
-        :rtype: ParseQuery
+        :rtype: Query
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         return self
@@ -68,7 +68,7 @@ class ParseQuery(object):
     def filter(self, **kwargs):
         """
         :return:
-        :rtype: ParseQuery
+        :rtype: Query
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
 
@@ -104,7 +104,7 @@ class ParseQuery(object):
     def order_by(self, *args):
         """
         :return:
-        :rtype: ParseQuery
+        :rtype: Query
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         self._order_list += args
@@ -113,7 +113,7 @@ class ParseQuery(object):
     def limit(self, limit):
         """
         :return:
-        :rtype: ParseQuery
+        :rtype: Query
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(limit, int) and 1 <= limit <= 1000, 'limit should be an integer between 1 and 1,000'
@@ -123,7 +123,7 @@ class ParseQuery(object):
     def offset(self, offset):
         """
         :return:
-        :rtype: ParseQuery
+        :rtype: Query
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(offset, int) and offset > 0, 'offset should be a positive integer'
