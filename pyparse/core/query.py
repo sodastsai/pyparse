@@ -16,7 +16,11 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import copy
+import json
+import six
+from pyparse import pyparse
 from pyparse.request import request
+from pyparse.utils import camelcase
 
 
 class ParseQuery(object):
@@ -26,9 +30,13 @@ class ParseQuery(object):
 
         self._object_class = object_class
         self._class_name = class_name or object_class.get_class_name()
-        self._contents = []
+
         self._arguments = {}
+        self._order_list = []
+        self._where_dict = {}
+
         self._evaluated = False
+        self._contents = []
 
     @property
     def evaluated(self):
@@ -63,6 +71,34 @@ class ParseQuery(object):
         :rtype: ParseQuery
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+
+        for key, value in six.iteritems(kwargs):
+            key_path_components = key.split('__')
+            if key_path_components[-1] in ('lt', 'lte', 'gt', 'gte', 'ne', 'in', 'nin',
+                                           'exists', 'select', 'dont_select', 'all'):
+                operator = key_path_components[-1]
+                key_path_components = key_path_components[:-1]
+
+                if operator == 'dont_select':
+                    operator = 'dontSelect'
+            else:
+                operator = 'exact'
+
+            if len(key_path_components) == 1:
+                key = key_path_components[0]
+
+                if pyparse.fields_using_snakecase:
+                    key = camelcase(key)
+
+                if operator == 'exact':
+                        self._where_dict[key] = value
+                else:
+                    key_query = self._where_dict.get(key, None)
+                    if key_query is None:
+                        key_query = {}
+                        self._where_dict[key] = key_query
+                    key_query['${}'.format(operator)] = value
+
         return self
 
     def order_by(self, *args):
@@ -71,12 +107,7 @@ class ParseQuery(object):
         :rtype: ParseQuery
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
-
-        order_list = self._arguments.get('order', None)
-        if order_list is None:
-            order_list = []
-            self._arguments['order'] = order_list
-        order_list += args
+        self._order_list += args
         return self
 
     def limit(self, limit):
@@ -101,17 +132,22 @@ class ParseQuery(object):
 
     # Requests
 
-    def _get_arguments(self, **extra):
+    def get_arguments(self, **extra):
+        """
+        :rtype: dict
+        """
         arguments = copy(self._arguments)
 
-        if 'order' in arguments:
-            arguments['order'] = ','.join(arguments['order'])
+        if self._order_list:
+            arguments['order'] = ','.join(self._order_list)
+        if self._where_dict:
+            arguments['where'] = json.dumps(self._where_dict, separators=(',', ':'))
 
         arguments.update(extra)
         return arguments
 
     @property
-    def _request_path(self):
+    def request_path(self):
         return 'classes/{}'.format(self._class_name)
 
     # Evaluate
@@ -133,7 +169,7 @@ class ParseQuery(object):
 
     def fetch(self):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
-        contents = request('get', self._request_path, arguments=self._get_arguments())['results']
+        contents = request('get', self.request_path, arguments=self.get_arguments())['results']
 
         if self._object_class:
             self._contents = [self._object_class.from_parse(content) for content in contents]
@@ -150,4 +186,4 @@ class ParseQuery(object):
         :return: the number of all objects which satisfy this query
         :rtype: int
         """
-        return request('get', self._request_path, arguments=self._get_arguments(count='1'))['count']
+        return request('get', self.request_path, arguments=self.get_arguments(count='1'))['count']
