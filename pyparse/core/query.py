@@ -25,16 +25,12 @@ class ParseQuery(object):
 
         self._object_class = object_class
         self._class_name = class_name or object_class.get_class_name()
-        self._content = []
+        self._contents = []
         self._evaluated = False
 
     @property
     def evaluated(self):
         return self._evaluated
-
-    @property
-    def _request_path(self):
-        return 'classes/{}'.format(self._class_name)
 
     # Object func
 
@@ -44,7 +40,7 @@ class ParseQuery(object):
         else:
             if not self.evaluated:
                 self.fetch()
-            return self._content[key.start:key.stop:key.step]
+            return self._contents[key]
 
     def __getslice__(self, i, j):  # Python 2
         return self.__getitem__(slice(i, j))
@@ -93,12 +89,22 @@ class ParseQuery(object):
         assert isinstance(offset, int) and offset > 0, 'offset should be a positive integer'
         return self
 
+    # Requests
+
+    @property
+    def _arguments(self):
+        return {}
+
+    @property
+    def _request_path(self):
+        return 'classes/{}'.format(self._class_name)
+
     # Evaluate
 
     def __len__(self):
         if not self.evaluated:
             self.fetch()
-        return len(self._content)
+        return len(self._contents)
 
     def __iter__(self):
         """
@@ -107,13 +113,19 @@ class ParseQuery(object):
         """
         if not self.evaluated:
             self.fetch()
-        for parse_object in self._content:
+        for parse_object in self._contents:
             yield parse_object
 
     def fetch(self):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
-        self._content = request('get', self._request_path, arguments=self._arguments)['results']
-        return self._content
+        contents = request('get', self._request_path, arguments=self._arguments)['results']
+
+        if self._object_class:
+            self._contents = [self._object_class.from_parse(content) for content in contents]
+        else:
+            self._contents = contents
+
+        return self
 
     # Annotation/Aggregation
 
@@ -126,9 +138,3 @@ class ParseQuery(object):
         arguments = self._arguments
         arguments['count'] = '1'
         return request('get', self._request_path, arguments=arguments)['count']
-
-    # Requests
-
-    @property
-    def _arguments(self):
-        return {}

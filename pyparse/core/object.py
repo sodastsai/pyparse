@@ -15,8 +15,11 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+import six
+from pyparse import pyparse
 from pyparse.core.base import DictFieldsMixin, AttrFieldsMixin
 from pyparse.core.query import ParseQuery
+from pyparse.utils import snakecase
 
 
 class ParseObject(DictFieldsMixin, AttrFieldsMixin):
@@ -36,9 +39,9 @@ class ParseObject(DictFieldsMixin, AttrFieldsMixin):
     # Fields
 
     _readonly_fields = {
-        'object_id',
-        'created_at',
-        'updated_at',
+        'object_id' if pyparse.fields_using_snakecase else 'objectId',
+        'created_at' if pyparse.fields_using_snakecase else 'createdAt',
+        'updated_at' if pyparse.fields_using_snakecase else 'updatedAt',
     }
 
     # Object
@@ -50,10 +53,21 @@ class ParseObject(DictFieldsMixin, AttrFieldsMixin):
     # Parse dict
 
     @classmethod
-    def _from_parse(cls, raw_parse_object):
-        pass
+    def from_parse(cls, raw_parse_object):
+        """
+        :type raw_parse_object: dict
+        :rtype: ParseObject
+        """
+        instance = cls()
 
-    def _to_parse(self):
+        for key, value in six.iteritems(raw_parse_object):
+            if pyparse.fields_using_snakecase:
+                key = snakecase(key)
+            instance._content[key] = value
+
+        return instance
+
+    def to_parse(self):
         pass
 
     # Fetch and query

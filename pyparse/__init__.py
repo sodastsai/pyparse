@@ -25,6 +25,8 @@ class _ParsePy(object):
         """:type: str"""
         self._rest_api_key = None
         """:type: str"""
+        self.fields_using_snakecase = False
+        """:type: bool"""
 
     @property
     def application_id(self):
