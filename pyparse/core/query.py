@@ -30,7 +30,7 @@ class Query(object):
 
         self._object_class = object_class
         # noinspection PyProtectedMember
-        self._class_name = class_name or object_class._get_class_name()
+        self._class_name = class_name or object_class.class_name or object_class.__name__
 
         self._arguments = {}
         self._order_list = []

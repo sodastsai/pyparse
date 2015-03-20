@@ -21,83 +21,8 @@ import six
 from pyparse.core.query import Query
 
 
-class ObjectBase(type):
-
-    def __new__(mcs, class_name, bases, class_dict):
-        # Find fields out from class_dict
-        fields = {}
-        """:type: dict[str, Field]"""
-        final_class_dict = {}
-        for attr_name, attr_obj in six.iteritems(class_dict):
-            if isinstance(attr_obj, Field):
-                fields[attr_name] = attr_obj
-                attr_obj._python_name = attr_name
-            else:
-                final_class_dict[attr_name] = attr_obj
-        final_class_dict['_fields'] = fields
-
-        # Create class
-        klass = type.__new__(mcs, class_name, bases, final_class_dict)
-
-        # Add fields back
-        for field_name, field in six.iteritems(fields):
-            setattr(klass, field_name, property(fget=mcs._getter(field),
-                                                fset=mcs._setter(field) if not field.readonly else None,
-                                                fdel=mcs._deleter(field) if not field.readonly else None))
-
-        return klass
-
-    @staticmethod
-    def _getter(field):
-        def getter(self):
-            return self._content.get(field.parse_name, None)
-        return getter
-
-    @staticmethod
-    def _setter(field):
-        def setter(self, value):
-            self._content[field.parse_name] = value
-        return setter
-
-    @staticmethod
-    def _deleter(field):
-        def deleter(self):
-            if field.parse_name in self._content:
-                del self._content[field.parse_name]
-        return deleter
-
-
-@six.add_metaclass(ObjectBase)
-class Object(object):
-
-    # Field
-
-    object_id = Field('objectId', readonly=True)
-    created_at = DateTimeField('createdAt', readonly=True)
-    updated_at = DateTimeField('updatedAt', readonly=True)
-
-    # Meta
-
-    @classmethod
-    def _get_meta_class(cls):
-        return getattr(cls, '_Meta', None)
-
-    @classmethod
-    def _get_class_name(cls):
-        class_name = None
-
-        meta_class = cls._get_meta_class()
-        if meta_class:
-            class_name = getattr(meta_class, 'class_name', None)
-
-        return class_name or cls.__name__
-
-    # Object
-
-    def __init__(self, **kwargs):
-        self._content = kwargs
-
-    # Dict interface
+# noinspection PyUnresolvedReferences
+class ObjectDictMixin(object):
 
     def __getitem__(self, key):
         return self._content.get(key, None)
@@ -163,7 +88,72 @@ class Object(object):
         """
         return dict(self._content)
 
-    # Parse dict
+
+class ObjectBase(type):
+
+    def __new__(mcs, class_name, bases, class_dict):
+        # Find fields out from class_dict
+        fields = {}
+        """:type: dict[str, Field]"""
+        final_class_dict = {}
+        for attr_name, attr_obj in six.iteritems(class_dict):
+            if isinstance(attr_obj, Field):
+                fields[attr_name] = attr_obj
+                attr_obj._python_name = attr_name
+            else:
+                final_class_dict[attr_name] = attr_obj
+        final_class_dict['_fields'] = fields
+
+        final_class_dict['class_name'] = class_name
+
+        # Create class
+        klass = type.__new__(mcs, class_name, bases, final_class_dict)
+
+        # Add fields back
+        for field_name, field in six.iteritems(fields):
+            setattr(klass, field_name, property(fget=mcs._getter(field),
+                                                fset=mcs._setter(field) if not field.readonly else None,
+                                                fdel=mcs._deleter(field) if not field.readonly else None))
+
+        return klass
+
+    @staticmethod
+    def _getter(field):
+        def getter(self):
+            return self._content.get(field.parse_name, None)
+        return getter
+
+    @staticmethod
+    def _setter(field):
+        def setter(self, value):
+            self._content[field.parse_name] = value
+        return setter
+
+    @staticmethod
+    def _deleter(field):
+        def deleter(self):
+            if field.parse_name in self._content:
+                del self._content[field.parse_name]
+        return deleter
+
+
+@six.add_metaclass(ObjectBase)
+class Object(ObjectDictMixin, object):
+
+    # Field
+
+    object_id = Field('objectId', readonly=True)
+    created_at = DateTimeField('createdAt', readonly=True)
+    updated_at = DateTimeField('updatedAt', readonly=True)
+
+    # Object
+
+    def __init__(self, **kwargs):
+        self._content = kwargs
+
+    # Parse SDK
+
+    class_name = None
 
     @classmethod
     def from_parse(cls, raw_parse_object):
