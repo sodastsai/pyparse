@@ -15,41 +15,21 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
-from pyparse.data.base import DictFieldsMixin, AttrFieldsMixin
+
+# Ref: Parse Error Code: http://www.parse.com/docs/dotnet/api/html/T_Parse_ParseException_ErrorCode.htm
 
 
-class ParseObject(DictFieldsMixin, AttrFieldsMixin):
+class ParseError(Exception):
 
-    # Parse Class
+    def __init__(self, code, reason):
+        self.code = code
+        """:type: int"""
+        self.reason = reason
+        """:type: str"""
 
-    class_name = None
-    """:type: str"""
+    def __str__(self):
+        return '{0.reason} ({0.code}) '.format(self)
 
-    @classmethod
-    def get_class_name(cls):
-        """
-        :rtype: str
-        """
-        return cls.class_name or cls.__name__
 
-    # Fields
-
-    _readonly_fields = {
-        'object_id',
-        'created_at',
-        'updated_at',
-    }
-
-    # Object
-
-    def __init__(self, **kwargs):
-        self._content = kwargs
-        """:type: dict"""
-
-    # Parse dict
-
-    def from_parse(self, raw_parse_object):
-        pass
-
-    def to_parse(self):
-        pass
+class ParseInternalServerError(ParseError):
+    pass

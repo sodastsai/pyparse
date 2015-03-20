@@ -19,6 +19,7 @@ from . import pyparse
 from copy import copy
 import json
 import requests
+from pyparse.error import ParseInternalServerError, ParseError
 
 
 class ParseRequest(object):
@@ -107,7 +108,14 @@ class ParseRequest(object):
 
         response = getattr(requests, verb)(url, *args, **kwargs)
         """:type: requests.models.Response"""
-        return response.json()
+
+        response_dict = response.json()
+        if response.status_code >= 500:
+            raise ParseInternalServerError(response_dict['code'], response_dict['error'])
+        elif response.status_code >= 400:
+            raise ParseError(response_dict['code'], response_dict['error'])
+        else:
+            return response_dict
 
     # HTTP Verbs
 
