@@ -75,17 +75,21 @@ class Object(object):
     created_at = DateTimeField('createdAt', readonly=True)
     updated_at = DateTimeField('updatedAt', readonly=True)
 
-    # Parse Class
-
-    class_name = None
-    """:type: str"""
+    # Meta
 
     @classmethod
-    def get_class_name(cls):
-        """
-        :rtype: str
-        """
-        return cls.class_name or cls.__name__
+    def _get_meta_class(cls):
+        return getattr(cls, '_Meta', None)
+
+    @classmethod
+    def _get_class_name(cls):
+        class_name = None
+
+        meta_class = cls._get_meta_class()
+        if meta_class:
+            class_name = getattr(meta_class, 'class_name', None)
+
+        return class_name or cls.__name__
 
     # Object
 
