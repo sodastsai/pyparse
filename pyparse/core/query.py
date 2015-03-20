@@ -29,7 +29,8 @@ class Query(object):
         assert object_class or class_name, 'You must assign at least one of ObjectClass and ClassName'
 
         self._object_class = object_class
-        self._class_name = class_name or object_class.get_class_name()
+        # noinspection PyProtectedMember
+        self._class_name = class_name or object_class._get_class_name()
 
         self._arguments = {}
         self._order_list = []

@@ -41,28 +41,29 @@ class ObjectBase(type):
 
         # Add fields back
         for field_name, field in six.iteritems(fields):
-            setattr(klass, field_name, property(fget=mcs._getter(field_name),
-                                                fset=mcs._setter(field_name) if not field.readonly else None,
-                                                fdel=mcs._deleter(field_name) if not field.readonly else None))
+            setattr(klass, field_name, property(fget=mcs._getter(field),
+                                                fset=mcs._setter(field) if not field.readonly else None,
+                                                fdel=mcs._deleter(field) if not field.readonly else None))
 
         return klass
 
     @staticmethod
-    def _getter(key):
+    def _getter(field):
         def getter(self):
-            return self._content.get(key, None)
+            return self._content.get(field.parse_name, None)
         return getter
 
     @staticmethod
-    def _setter(key):
+    def _setter(field):
         def setter(self, value):
-            self._content[key] = value
+            self._content[field.parse_name] = value
         return setter
 
     @staticmethod
-    def _deleter(key):
+    def _deleter(field):
         def deleter(self):
-            del self._content[key]
+            if field.parse_name in self._content:
+                del self._content[field.parse_name]
         return deleter
 
 
