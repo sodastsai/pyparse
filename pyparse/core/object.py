@@ -92,30 +92,28 @@ class ObjectDictMixin(object):
 class ObjectBase(type):
 
     def __new__(mcs, class_name, bases, class_dict):
-        # Find fields out from class_dict
+        # Find field objects out from class_dict
         fields = {}
         """:type: dict[str, Field]"""
         final_class_dict = {}
         for attr_name, attr_obj in six.iteritems(class_dict):
             if isinstance(attr_obj, Field):
-                fields[attr_name] = attr_obj
                 attr_obj._python_name = attr_name
+                fields[attr_name] = attr_obj
             else:
                 final_class_dict[attr_name] = attr_obj
         final_class_dict['_fields'] = fields
 
-        final_class_dict['class_name'] = class_name
+        # Setup class name
+        final_class_dict['class_name'] = final_class_dict.get('class_name', class_name)
 
-        # Create class
-        klass = type.__new__(mcs, class_name, bases, final_class_dict)
-
-        # Add fields back
+        # Add fields back as value property
         for field_name, field in six.iteritems(fields):
-            setattr(klass, field_name, property(fget=mcs._getter(field),
-                                                fset=mcs._setter(field) if not field.readonly else None,
-                                                fdel=mcs._deleter(field) if not field.readonly else None))
-
-        return klass
+            final_class_dict[field_name] = property(fget=mcs._getter(field),
+                                                    fset=mcs._setter(field) if not field.readonly else None,
+                                                    fdel=mcs._deleter(field) if not field.readonly else None)
+        # Create class
+        return type.__new__(mcs, class_name, bases, final_class_dict)
 
     @staticmethod
     def _getter(field):
