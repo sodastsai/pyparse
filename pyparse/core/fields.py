@@ -23,12 +23,11 @@ class Field(object):
     def __init__(self, parse_name=None, python_name=None, readonly=False):
         self._parse_name = parse_name
         self._python_name = python_name
-
         self._readonly = readonly
 
     @property
     def parse_name(self):
-        return self._parse_name or self._python_name
+        return self._parse_name
 
     @property
     def python_name(self):

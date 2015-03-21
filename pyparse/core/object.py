@@ -17,6 +17,7 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 import dateutil.parser
 from pyparse.core.fields import Field, DateTimeField
+from pyparse.utils import camelcase
 import six
 from pyparse.core.query import Query
 
@@ -99,6 +100,8 @@ class ObjectBase(type):
         for attr_name, attr_obj in six.iteritems(class_dict):
             if isinstance(attr_obj, Field):
                 attr_obj._python_name = attr_name
+                # noinspection PyProtectedMember
+                attr_obj._parse_name = attr_obj._parse_name or camelcase(attr_name)
                 fields[attr_name] = attr_obj
             else:
                 final_class_dict[attr_name] = attr_obj
@@ -140,9 +143,9 @@ class Object(ObjectDictMixin, object):
 
     # Field
 
-    object_id = Field('objectId', readonly=True)
-    created_at = DateTimeField('createdAt', readonly=True)
-    updated_at = DateTimeField('updatedAt', readonly=True)
+    object_id = Field(readonly=True)
+    created_at = DateTimeField(readonly=True)
+    updated_at = DateTimeField(readonly=True)
 
     # Object
 
