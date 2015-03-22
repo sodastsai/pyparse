@@ -147,6 +147,9 @@ class Object(ObjectDictMixin, object):
     created_at = DateTimeField(readonly=True)
     updated_at = DateTimeField(readonly=True)
 
+    _fields = None
+    """:type: dict[str, Field]"""
+
     # Object
 
     def __init__(self, **kwargs):
@@ -173,13 +176,17 @@ class Object(ObjectDictMixin, object):
                 value = field.to_python(value)
             # Try to convert value by guessing
             else:
+                final_value = value
+                # Try date
                 if isinstance(value, six.string_types) \
                         and ':' in value and 'T' in value and 'Z' in value and '-' in value:
                     # noinspection PyBroadException
                     try:
-                        value = dateutil.parser.parse(value)
+                        final_value = dateutil.parser.parse(value)
                     except Exception:
-                        value = value
+                        pass
+
+                value = final_value
 
             instance._content[field_name] = value
 
