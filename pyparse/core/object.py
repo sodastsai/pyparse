@@ -15,6 +15,7 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+from copy import deepcopy
 import dateutil.parser
 from pyparse.core.fields import Field, DateTimeField
 from pyparse.utils import camelcase
@@ -87,10 +88,12 @@ class ObjectDictMixin(object):
         """
         :rtype: dict
         """
-        return dict(self._content)
+        return deepcopy(self._content)
 
 
 class ObjectBase(type):
+
+    anonymous_classes = {}
 
     def __new__(mcs, class_name, bases, class_dict):
         # Find field objects out from class_dict
@@ -107,8 +110,9 @@ class ObjectBase(type):
                 final_class_dict[attr_name] = attr_obj
         final_class_dict['_fields'] = fields
 
-        # Setup class name
+        # Setup class name and property
         final_class_dict['class_name'] = final_class_dict.get('class_name', class_name)
+        final_class_dict['is_anonymous_class'] = False
 
         # Add fields back as value property
         for field_name, field in six.iteritems(fields):
@@ -117,6 +121,17 @@ class ObjectBase(type):
                                                     fdel=mcs._deleter(field) if not field.readonly else None)
         # Create class
         return type.__new__(mcs, class_name, bases, final_class_dict)
+
+    def __call__(cls, *args, class_name=None, **kwargs):
+        klass = cls
+        if class_name:
+            klass = ObjectBase.anonymous_classes.get(class_name, None)
+            if not klass:
+                # Create the object class
+                klass = ObjectBase(class_name, (Object,), {})
+                klass.is_anonymous_class = True
+                ObjectBase.anonymous_classes[class_name] = klass
+        return super(ObjectBase, klass).__call__(*args, **kwargs)
 
     @staticmethod
     def _getter(field):
@@ -152,8 +167,28 @@ class Object(ObjectDictMixin, object):
 
     # Object
 
-    def __init__(self, **kwargs):
-        self._content = kwargs
+    is_anonymous_class = False
+
+    @classmethod
+    def from_object(cls, another_object):
+        """
+        :type another_object: Object
+        :rtype: Object
+        """
+        assert cls.class_name == another_object.class_name, 'Parse class name of two objects is not the same.'
+        return cls(content=another_object._content)
+
+    def __init__(self, content=None, **kwargs):
+        self._content = deepcopy(content) or {}
+
+        # Populate from kwargs
+        python_key_fields = {field.python_name: field for field in six.itervalues(self._fields)}
+        """:type: dict[str, Field]"""
+        for key, value in six.iteritems(kwargs):
+            field = python_key_fields.get(key, None)
+            if field:
+                key = field.parse_name
+            self._content[key] = value
 
     # Parse SDK
 
