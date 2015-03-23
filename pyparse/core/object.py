@@ -17,71 +17,14 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
 import dateutil.parser
+import os
 from pyparse.core.fields import Field, DateTimeField
 from pyparse.request import request
 from pyparse.utils import camelcase
 import six
 from pyparse.core.query import Query
 
-
-# noinspection PyUnresolvedReferences
-class ObjectDictMixin(object):
-
-    def __getitem__(self, key):
-        return self._content.get(key, None)
-
-    def __setitem__(self, key, value):
-        field = self._fields.get(key, None)
-        if field and field.readonly:
-            raise KeyError('{} is a readonly field.'.format(key))
-
-        if value is not None:
-            self._content[key] = value
-        else:
-            del self._content[key]
-
-    def __contains__(self, key):
-        return key in self._content
-
-    def __iter__(self):
-        """
-        :rtype: collections.Iterable[str]
-        """
-        for key in self._content:
-            yield key
-
-    def items(self):
-        """
-        :rtype: collections.Iterable[(str, object)]
-        """
-        for kv_pair in six.iteritems(self._content):
-            yield kv_pair
-
-    def values(self):
-        """
-        :rtype: collections.Iterable[object]
-        """
-        for value in six.itervalues(self._content):
-            yield value
-
-    def update(self, other=None, **kwargs):
-        """
-        :type other: dict
-        """
-        readonly_keys = set([key for key in kwargs if key in self._readonly_fields])
-        if other:
-            readonly_keys |= set([key for key in other if key in self._readonly_fields])
-        if len(readonly_keys) != 0:
-            raise KeyError('{} is a readonly field.'.format(', '.join(readonly_keys)))
-
-        return self._content.update(other, **kwargs)
-
-    @property
-    def as_dict(self):
-        """
-        :rtype: dict
-        """
-        return deepcopy(self._content)
+_parse_object__module__ = __package__ + '.' + os.path.splitext(os.path.split(__file__)[-1])[0]
 
 
 class ObjectBase(type):
@@ -103,16 +46,38 @@ class ObjectBase(type):
                 final_class_dict[attr_name] = attr_obj
         final_class_dict['_fields'] = fields
 
+        # Update fields from bases
+
+        if class_dict['__module__'] != _parse_object__module__ and class_name != 'Object':
+            for base in bases:
+                if issubclass(base, Object):
+                    # noinspection PyProtectedMember
+                    final_class_dict['_fields'].update(base._fields)
+
         # Setup class name and property
         final_class_dict['class_name'] = final_class_dict.get('class_name', class_name)
         final_class_dict['is_anonymous_class'] = False
 
         # Add fields back as value property
         for field_name, field in six.iteritems(fields):
-            final_class_dict[field_name] = property(fget=mcs._getter(field),
-                                                    fset=mcs._setter(field) if not field.readonly else None)
+            final_class_dict[field_name] = property(
+                fget=mcs._getter(field),
+                fset=mcs._setter(field) if not field.readonly else None
+            )
         # Create class
         return type.__new__(mcs, class_name, bases, final_class_dict)
+
+    @staticmethod
+    def _getter(field):
+        def getter(self):
+            return self.get(field.parse_name)
+        return getter
+
+    @staticmethod
+    def _setter(field):
+        def setter(self, value):
+            return self.set(field.parse_name, value)
+        return setter
 
     def __call__(cls, *args, class_name=None, **kwargs):
         klass = cls
@@ -125,36 +90,9 @@ class ObjectBase(type):
                 ObjectBase.anonymous_classes[class_name] = klass
         return super(ObjectBase, klass).__call__(*args, **kwargs)
 
-    @staticmethod
-    def _getter(field):
-        """
-        :type field: Field
-        :rtype: (Object) -> object
-        """
-        def getter(self):
-            """
-            :type self: Object
-            """
-            return self._content.get(field.parse_name, None)
-        return getter
-
-    @staticmethod
-    def _setter(field):
-        """
-        :type field: Field
-        :rtype: (Object, object) -> None
-        """
-        def setter(self, value):
-            """
-            :type self: Object
-            """
-            self._dirty = True
-            self._content[field.parse_name] = value
-        return setter
-
 
 @six.add_metaclass(ObjectBase)
-class Object(ObjectDictMixin, object):
+class Object(object):
 
     # Field
 
@@ -180,6 +118,8 @@ class Object(ObjectDictMixin, object):
 
     def __init__(self, content=None, **kwargs):
         self._content = deepcopy(content) or {}
+        """:type: dict"""
+
         # Populate from kwargs
         python_key_fields = {field.python_name: field for field in six.itervalues(self._fields)}
         """:type: dict[str, Field]"""
@@ -189,11 +129,30 @@ class Object(ObjectDictMixin, object):
                 key = field.parse_name
             self._content[key] = value
 
-        self._dirty = False
+        self._modified_content = {}
+
+    # Content
 
     @property
     def dirty(self):
-        return self._dirty
+        """:type: bool"""
+        return bool(self._modified_content)
+
+    def get(self, key):
+        return self._content[key] if key in self._content else None
+
+    def set(self, key, value):
+        field = self._fields.get(key, None)
+        if field and field.readonly:
+            raise KeyError('{} is a readonly field.'.format(key))
+
+        if key not in self._modified_content:
+            self._modified_content[key] = self.get(key)
+
+        if value is not None:
+            self._content[key] = value
+        else:
+            del self._content[key]
 
     # Parse SDK
 
@@ -242,7 +201,7 @@ class Object(ObjectDictMixin, object):
         return 'classes/{}/{}'.format(cls.class_name, object_id)
 
     @classmethod
-    def get(cls, object_id):
+    def fetch(cls, object_id):
         """
         :param object_id:
         :type object_id: str
@@ -260,7 +219,89 @@ class Object(ObjectDictMixin, object):
         return Query(cls)
 
     def save(self):
-        if not self._dirty:
-            return
+        if self.object_id:
+            if not self.dirty:
+                return
 
-        self._dirty = False
+            # Update object
+            payload = {}
+            for modified_key, original_value in six.iteritems(self._modified_content):
+                current_value = self.get(modified_key)
+                if original_value != current_value:
+                    payload[modified_key] = current_value
+            if not payload:
+                return
+
+            remote_path = self._remote_path(self.object_id)
+            verb = 'put'
+        else:
+            # Create object
+            payload = self.as_dict
+            remote_path = 'classes/{}'.format(self.class_name)
+            verb = 'post'
+
+        response = request(verb, remote_path, arguments=payload)
+        if self.object_id:
+            # Updated - clean up
+            self._modified_content = {}
+        else:
+            # New created - update info
+            response['updatedAt'] = response['createdAt']
+            self._content.update(response)
+
+    def delete(self):
+        if not self.object_id:
+            return
+        request('delete', self._remote_path(self.object_id))
+        del self._content['objectId']
+
+    # Dict
+
+    def __getitem__(self, key):
+        return self.get(key)
+
+    def __setitem__(self, key, value):
+        self.set(key, value)
+
+    def __contains__(self, key):
+        return key in self._content
+
+    def __iter__(self):
+        """
+        :rtype: collections.Iterable[str]
+        """
+        for key in self._content:
+            yield key
+
+    def items(self):
+        """
+        :rtype: collections.Iterable[(str, object)]
+        """
+        for kv_pair in six.iteritems(self._content):
+            yield kv_pair
+
+    def values(self):
+        """
+        :rtype: collections.Iterable[object]
+        """
+        for value in six.itervalues(self._content):
+            yield value
+
+    def update(self, other=None, **kwargs):
+        """
+        :type other: dict
+        """
+        readonly_keys = set([key for key in kwargs if key in self._readonly_fields])
+        if other:
+            readonly_keys |= set([key for key in other if key in self._readonly_fields])
+        if len(readonly_keys) != 0:
+            raise KeyError('{} is a readonly field.'.format(', '.join(readonly_keys)))
+
+        return self._content.update(other, **kwargs)
+
+    @property
+    def as_dict(self):
+        """
+        :rtype: dict
+        """
+        return deepcopy(self._content)
