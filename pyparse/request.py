@@ -22,7 +22,7 @@ import requests
 from pyparse.error import ParseInternalServerError, ParseError
 
 
-class ParseRequest(object):
+class Request(object):
 
     SCHEME = 'https'
     HOST = 'api.parse.com'
@@ -158,4 +158,4 @@ def request(verb, path, arguments=None, headers=None):
     :rtype: dict
     """
     assert verb in ('get', 'post', 'put', 'delete'), 'verb only accepts get, post, put, and delete'
-    return getattr(ParseRequest(path=path, arguments=arguments, headers=headers), verb)()
+    return getattr(Request(path=path, arguments=arguments, headers=headers), verb)()
