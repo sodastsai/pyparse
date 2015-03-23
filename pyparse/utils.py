@@ -24,6 +24,41 @@ _uppercase_letter_pattern = re.compile(r'([A-Z])')
 
 def camelcase(snakecase_string, capitalize_head=False):
     """
+    >>> camelcase('abc_def')
+    'abcDef'
+
+    >>> camelcase('abc_def', True)
+    'AbcDef'
+    >>> # Random test generator
+    >>> import string, random
+    >>> test_str = ''
+    >>> test_ans = ''
+    >>> rand_char = ''
+    >>> upper = False
+    >>> # Make first char upper or lowercase
+    >>> if random.choice([True, False]):
+    ...     rand_char = random.choice(string.ascii_uppercase)
+    ...     test_str = rand_char.lower()
+    ...     test_ans = rand_char
+    ...     upper = True
+    ... else:
+    ...     rand_char = random.choice(string.ascii_lowercase)
+    ...     test_str = rand_char.lower()
+    ...     test_ans = rand_char
+    ...     upper = False
+    >>> # Generate rest of string
+    >>> for x in range(1, 10):
+    ...     rand_char = random.choice(string.ascii_lowercase)
+    ...     if random.choice([True, False]):
+    ...         test_str += '_'
+    ...         test_str += rand_char
+    ...         test_ans += rand_char.upper()
+    ...     else:
+    ...         test_str += rand_char
+    ...         test_ans += rand_char
+    >>> camelcase(test_str, upper) == test_ans
+    True
+
     :type snakecase_string: str
     :rtype: str
     """
@@ -35,6 +70,33 @@ def camelcase(snakecase_string, capitalize_head=False):
 
 def snakecase(camelcase_string):
     """
+    >>> snakecase('abc')
+    'abc'
+    >>> snakecase('abcDef')
+    'abc_def'
+
+
+    >>> # Random test generator
+    >>> import string, random
+    >>> test_str = ''
+    >>> test_ans = ''
+    >>> rand_char = ''
+    >>> rand_char = random.choice(string.ascii_lowercase)
+    >>> test_ans = rand_char
+    >>> test_str = rand_char
+    >>> # Generate rest of string
+    >>> for x in range(1, 10):
+    ...     rand_char = random.choice(string.ascii_lowercase)
+    ...     if random.choice([True, False]):
+    ...         test_ans += '_'
+    ...         test_ans += rand_char
+    ...         test_str += rand_char.upper()
+    ...     else:
+    ...         test_ans += rand_char
+    ...         test_str += rand_char
+    >>> snakecase(test_str) == test_ans
+    True
+
     :type camelcase_string: str
     :rtype: str
     """
