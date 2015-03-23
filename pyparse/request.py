@@ -81,13 +81,11 @@ class Request(object):
     def url(self):
         return self.generate_url(self._path)
 
-    @property
     def arguments(self, use_json=False):
         if use_json and self._arguments:
             return json.dumps(self._arguments, separators=(',', ':'))
         return self._arguments
 
-    @property
     def headers(self, post=False):
         header = copy(self._headers)
         header.update(self.authentication_headers())
@@ -123,7 +121,7 @@ class Request(object):
         """
         :rtype: dict
         """
-        return self._request('get', self.url, params=self.arguments, headers=self.headers)
+        return self._request('get', self.url, params=self.arguments(), headers=self.headers())
 
     def post(self):
         """
@@ -141,7 +139,7 @@ class Request(object):
         """
         :rtype: dict
         """
-        return self._request('delete', self.url, params=self.arguments, headers=self.headers)
+        return self._request('delete', self.url, params=self.arguments(), headers=self.headers())
 
 
 def request(verb, path, arguments=None, headers=None):
