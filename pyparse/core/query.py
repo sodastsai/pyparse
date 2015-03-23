@@ -18,9 +18,8 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from copy import copy
 import json
 import six
-from pyparse import pyparse
+from pyparse.core.object import ObjectBase
 from pyparse.request import request
-from pyparse.utils import camelcase
 
 
 class Query(object):
@@ -28,7 +27,7 @@ class Query(object):
     def __init__(self, object_class=None, class_name=None):
         assert object_class or class_name, 'You must assign at least one of ObjectClass and ClassName'
 
-        self._object_class = object_class
+        self._object_class = object_class or ObjectBase.anonymous_class(class_name)
         # noinspection PyProtectedMember
         self._class_name = class_name or object_class.class_name or object_class.__name__
 
@@ -42,6 +41,12 @@ class Query(object):
     @property
     def evaluated(self):
         return self._evaluated
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return 'Query: ' + repr(self.get_arguments())
 
     # Object func
 
@@ -88,11 +93,14 @@ class Query(object):
             if len(key_path_components) == 1:
                 key = key_path_components[0]
 
-                if pyparse.fields_using_snakecase:
-                    key = camelcase(key)
+                # Check field
+                # noinspection PyProtectedMember
+                field = self._object_class._fields.get(key, None)
+                if field:
+                    key = field.parse_name
 
                 if operator == 'exact':
-                        self._where_dict[key] = value
+                    self._where_dict[key] = value
                 else:
                     key_query = self._where_dict.get(key, None)
                     if key_query is None:

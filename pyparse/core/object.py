@@ -17,78 +17,11 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
 import dateutil.parser
-import os
+from pyparse.core.base import ObjectBase
 from pyparse.core.fields import Field, DateTimeField
 from pyparse.request import request
-from pyparse.utils import camelcase
 import six
 from pyparse.core.query import Query
-
-_parse_object__module__ = __package__ + '.' + os.path.splitext(os.path.split(__file__)[-1])[0]
-
-
-class ObjectBase(type):
-
-    anonymous_classes = {}
-
-    def __new__(mcs, class_name, bases, class_dict):
-        # Find field objects out from class_dict
-        fields = {}
-        """:type: dict[str, Field]"""
-        final_class_dict = {}
-        for attr_name, attr_obj in six.iteritems(class_dict):
-            if isinstance(attr_obj, Field):
-                attr_obj._python_name = attr_name
-                # noinspection PyProtectedMember
-                attr_obj._parse_name = attr_obj._parse_name or camelcase(attr_name)
-                fields[attr_name] = attr_obj
-            else:
-                final_class_dict[attr_name] = attr_obj
-        final_class_dict['_fields'] = fields
-
-        # Update fields from bases
-
-        if class_dict['__module__'] != _parse_object__module__ and class_name != 'Object':
-            for base in bases:
-                if issubclass(base, Object):
-                    # noinspection PyProtectedMember
-                    final_class_dict['_fields'].update(base._fields)
-
-        # Setup class name and property
-        final_class_dict['class_name'] = final_class_dict.get('class_name', class_name)
-        final_class_dict['is_anonymous_class'] = False
-
-        # Add fields back as value property
-        for field_name, field in six.iteritems(fields):
-            final_class_dict[field_name] = property(
-                fget=mcs._getter(field),
-                fset=mcs._setter(field) if not field.readonly else None
-            )
-        # Create class
-        return type.__new__(mcs, class_name, bases, final_class_dict)
-
-    @staticmethod
-    def _getter(field):
-        def getter(self):
-            return self.get(field.parse_name)
-        return getter
-
-    @staticmethod
-    def _setter(field):
-        def setter(self, value):
-            return self.set(field.parse_name, value)
-        return setter
-
-    def __call__(cls, *args, class_name=None, **kwargs):
-        klass = cls
-        if class_name:
-            klass = ObjectBase.anonymous_classes.get(class_name, None)
-            if not klass:
-                # Create the object class
-                klass = ObjectBase(class_name, (Object,), {})
-                klass.is_anonymous_class = True
-                ObjectBase.anonymous_classes[class_name] = klass
-        return super(ObjectBase, klass).__call__(*args, **kwargs)
 
 
 @six.add_metaclass(ObjectBase)
