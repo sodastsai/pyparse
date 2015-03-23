@@ -18,6 +18,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from copy import deepcopy
 import dateutil.parser
 from pyparse.core.fields import Field, DateTimeField
+from pyparse.request import request
 from pyparse.utils import camelcase
 import six
 from pyparse.core.query import Query
@@ -233,6 +234,10 @@ class Object(ObjectDictMixin, object):
     # Fetch and query
 
     @classmethod
+    def _remote_path(cls, object_id):
+        return 'classes/{}/{}'.format(cls.class_name, object_id)
+
+    @classmethod
     def get(cls, object_id):
         """
         :param object_id:
@@ -240,6 +245,7 @@ class Object(ObjectDictMixin, object):
         :return:
         :rtype: Object
         """
+        return cls(content=request('get', cls._remote_path(object_id)))
 
     @classmethod
     def query(cls):
