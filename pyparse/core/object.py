@@ -124,9 +124,6 @@ class Object(object):
 
         return instance
 
-    def to_parse(self):
-        pass
-
     # Remote
 
     @classmethod
@@ -180,7 +177,8 @@ class Object(object):
         else:
             # New created - update info
             response['updatedAt'] = response['createdAt']
-            self._content.update(response)
+
+        self._content.update(response)
 
     def delete(self):
         if not self.object_id:
