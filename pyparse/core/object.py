@@ -40,14 +40,6 @@ class ObjectDictMixin(object):
         else:
             del self._content[key]
 
-    def __delitem__(self, key):
-        field = self._fields.get(key, None)
-        if field and field.readonly:
-            raise KeyError('{} is a readonly field.'.format(key))
-
-        if key in self._content:
-            del self._content[key]
-
     def __contains__(self, key):
         return key in self._content
 
@@ -118,8 +110,7 @@ class ObjectBase(type):
         # Add fields back as value property
         for field_name, field in six.iteritems(fields):
             final_class_dict[field_name] = property(fget=mcs._getter(field),
-                                                    fset=mcs._setter(field) if not field.readonly else None,
-                                                    fdel=mcs._deleter(field) if not field.readonly else None)
+                                                    fset=mcs._setter(field) if not field.readonly else None)
         # Create class
         return type.__new__(mcs, class_name, bases, final_class_dict)
 
@@ -145,13 +136,6 @@ class ObjectBase(type):
         def setter(self, value):
             self._content[field.parse_name] = value
         return setter
-
-    @staticmethod
-    def _deleter(field):
-        def deleter(self):
-            if field.parse_name in self._content:
-                del self._content[field.parse_name]
-        return deleter
 
 
 @six.add_metaclass(ObjectBase)
