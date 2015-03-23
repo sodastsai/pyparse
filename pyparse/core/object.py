@@ -127,13 +127,28 @@ class ObjectBase(type):
 
     @staticmethod
     def _getter(field):
+        """
+        :type field: Field
+        :rtype: (Object) -> object
+        """
         def getter(self):
+            """
+            :type self: Object
+            """
             return self._content.get(field.parse_name, None)
         return getter
 
     @staticmethod
     def _setter(field):
+        """
+        :type field: Field
+        :rtype: (Object, object) -> None
+        """
         def setter(self, value):
+            """
+            :type self: Object
+            """
+            self._dirty = True
             self._content[field.parse_name] = value
         return setter
 
@@ -165,7 +180,6 @@ class Object(ObjectDictMixin, object):
 
     def __init__(self, content=None, **kwargs):
         self._content = deepcopy(content) or {}
-
         # Populate from kwargs
         python_key_fields = {field.python_name: field for field in six.itervalues(self._fields)}
         """:type: dict[str, Field]"""
@@ -174,6 +188,12 @@ class Object(ObjectDictMixin, object):
             if field:
                 key = field.parse_name
             self._content[key] = value
+
+        self._dirty = False
+
+    @property
+    def dirty(self):
+        return self._dirty
 
     # Parse SDK
 
@@ -215,7 +235,7 @@ class Object(ObjectDictMixin, object):
     def to_parse(self):
         pass
 
-    # Fetch and query
+    # Remote
 
     @classmethod
     def _remote_path(cls, object_id):
@@ -238,3 +258,9 @@ class Object(ObjectDictMixin, object):
         :rtype: Query
         """
         return Query(cls)
+
+    def save(self):
+        if not self._dirty:
+            return
+
+        self._dirty = False
