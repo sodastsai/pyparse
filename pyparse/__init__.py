@@ -25,6 +25,8 @@ class _ParsePy(object):
         """:type: str"""
         self._rest_api_key = None
         """:type: str"""
+        self._master_key = None
+        """:type: str"""
 
     @property
     def application_id(self):
@@ -42,17 +44,28 @@ class _ParsePy(object):
         """
         return self._rest_api_key or os.environ.get('PARSE_REST_API_KEY', None)
 
-    def setup(self, application_id=None, rest_api_key=None):
+    @property
+    def master_key(self):
+        """Get the master key used to call Parse REST API
+        :return: the master key string
+        :rtype: str
+        """
+        return self._master_key or os.environ.get('PARSE_MASTER_KEY', None)
+
+    def setup(self, application_id=None, rest_api_key=None, master_key=None):
         """Setup PyParse with specified application id and rest api key
-        :param application_id: the application id to be call
+        :param application_id: the application id to be called
         :type application_id: str
         :param rest_api_key: the rest api key to be used
         :type rest_api_key: str
+        :param master_key: the master key to be used
+        :type master_key: str
         """
         assert application_id, 'application id should not be empty'
         assert rest_api_key, 'rest api key should not be empty'
         self._application_id = application_id
         self._rest_api_key = rest_api_key
+        self._master_key = master_key
 
 
 pyparse = _ParsePy()
