@@ -66,3 +66,7 @@ class DateTimeField(Field):
         :rtype: datetime.datetime
         """
         return datetime.datetime.strptime(parse_value, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+class NumberField(Field):
+    pass

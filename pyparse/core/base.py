@@ -15,9 +15,10 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+from functools import partial
 import os
 import six
-from .fields import Field
+from .fields import Field, NumberField
 from ..utils import camelcase
 
 _parse_object__module__ = __package__ + '.' + os.path.splitext('object.py')[0]
@@ -88,4 +89,15 @@ class ObjectBase(type):
         return klass
 
     def __call__(cls, *args, class_name=None, **kwargs):
-        return super(ObjectBase, cls if not class_name else cls.anonymous_class(class_name)).__call__(*args, **kwargs)
+        klass = super(ObjectBase, cls if not class_name else cls.anonymous_class(class_name)).__call__(*args, **kwargs)
+
+        # noinspection PyProtectedMember
+        fields = klass._fields
+        """:type: dict[str, Field]"""
+
+        # Setup incrementable fields
+        for field_name, field in six.iteritems(fields):
+            if isinstance(field, NumberField):
+                setattr(klass, 'increment_{}'.format(field_name), partial(klass.increment, field.parse_name))
+
+        return klass

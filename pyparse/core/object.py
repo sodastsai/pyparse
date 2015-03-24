@@ -124,6 +124,21 @@ class Object(object):
 
         return instance
 
+    # Field Action
+
+    def increment(self, field_parse_name, step=1):
+        if self.object_id:
+            arguments = {
+                field_parse_name: {
+                    '__op': 'Increment',
+                    'amount': step,
+                }
+            }
+            resp = request('put', self._remote_path(self.object_id), arguments=arguments)
+            self._content.update(resp)
+        else:
+            self.set(field_parse_name, self.get(field_parse_name)+step)
+
     # Remote
 
     @classmethod
@@ -222,6 +237,7 @@ class Object(object):
         """
         :type other: dict
         """
+        # TODO: Dirty bit
         readonly_keys = set([key for key in kwargs if key in self._readonly_fields])
         if other:
             readonly_keys |= set([key for key in other if key in self._readonly_fields])
