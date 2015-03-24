@@ -18,6 +18,8 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import json
 
 from copy import copy
+from pyparse.core.data.types import guess_to_parse
+from pyparse.utils.strings import camelcase
 import six
 from pyparse.core.data.object import ObjectBase
 from pyparse.request import request
@@ -72,6 +74,10 @@ class Query(object):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         return self
 
+    _filter_operators = ('lt', 'lte', 'gt', 'gte', 'ne', 'in', 'nin', 'exists', 'select', 'dont_select', 'all', 'exact',
+                         'near_sphere', 'max_distance_in_miles', 'max_distance_in_kilometers',
+                         'max_distance_in_radians')
+
     def filter(self, **kwargs):
         """
         :return:
@@ -80,25 +86,26 @@ class Query(object):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
 
         for key, value in six.iteritems(kwargs):
-            key_path_components = key.split('__')
-            if key_path_components[-1] in ('lt', 'lte', 'gt', 'gte', 'ne', 'in', 'nin',
-                                           'exists', 'select', 'dont_select', 'all'):
-                operator = key_path_components[-1]
-                key_path_components = key_path_components[:-1]
-
-                if operator == 'dont_select':
-                    operator = 'dontSelect'
+            # Find keypaths and operators
+            key_paths = key.split('__')
+            if key_paths[-1] in self._filter_operators:
+                operator = key_paths[-1]
+                key_paths = key_paths[:-1]
             else:
+                key_paths = key_paths
                 operator = 'exact'
 
-            if len(key_path_components) == 1:
-                key = key_path_components[0]
+            if len(key_paths) == 1:
+                key = key_paths[0]
 
                 # Check field
                 # noinspection PyProtectedMember
                 field = self._object_class._fields.get(key, None)
                 if field:
                     key = field.parse_name
+                    value = field.to_parse(value)
+                else:
+                    value = guess_to_parse(value)
 
                 if operator == 'exact':
                     self._where_dict[key] = value
