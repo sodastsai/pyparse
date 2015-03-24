@@ -16,9 +16,9 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
-import dateutil.parser
 from pyparse.core.data.base import ObjectBase
 from pyparse.core.data.fields import Field, DateTimeField
+from pyparse.core.data.types import guess_to_python, guess_to_parse
 from pyparse.request import request
 import six
 from pyparse.core.data.query import Query
@@ -34,6 +34,8 @@ class Object(object):
     updated_at = DateTimeField(readonly=True)
 
     _fields = None
+    """:type: dict[str, Field]"""
+    _fields_py = None
     """:type: dict[str, Field]"""
 
     # Object
@@ -54,10 +56,9 @@ class Object(object):
         """:type: dict"""
 
         # Populate from kwargs
-        python_key_fields = {field.python_name: field for field in six.itervalues(self._fields)}
         """:type: dict[str, Field]"""
         for key, value in six.iteritems(kwargs):
-            field = python_key_fields.get(key, None)
+            field = self._fields_py.get(key, None)
             if field:
                 key = field.parse_name
             self._content[key] = value
@@ -101,24 +102,12 @@ class Object(object):
 
         for field_name, value in six.iteritems(raw_parse_object):
             # noinspection PyProtectedMember
-            # Use field object to convert value
             if field_name in cls._fields:
                 # noinspection PyProtectedMember
                 field = cls._fields[field_name]
                 value = field.to_python(value)
-            # Try to convert value by guessing
             else:
-                final_value = value
-                # Try date
-                if isinstance(value, six.string_types) \
-                        and ':' in value and 'T' in value and 'Z' in value and '-' in value:
-                    # noinspection PyBroadException
-                    try:
-                        final_value = dateutil.parser.parse(value)
-                    except Exception:
-                        pass
-
-                value = final_value
+                value = guess_to_python(value)
 
             instance._content[field_name] = value
 
@@ -153,7 +142,7 @@ class Object(object):
         :return:
         :rtype: Object
         """
-        return cls(content=request('get', cls._remote_path(object_id)))
+        return cls.from_parse(request('get', cls._remote_path(object_id)))
 
     @classmethod
     def query(cls):
@@ -184,6 +173,17 @@ class Object(object):
             payload = self.as_dict
             remote_path = 'classes/{}'.format(self.class_name)
             verb = 'post'
+
+        # Convert Python obj in payload to Parse obj
+        final_payload = {}
+        for key, value in six.iteritems(payload):
+            field = self._fields.get(key, None)
+            if field:
+                value = field.to_parse(value)
+            else:
+                value = guess_to_parse(value)
+            final_payload[key] = value
+        payload = final_payload
 
         response = request(verb, remote_path, arguments=payload)
         if self.object_id:

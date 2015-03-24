@@ -32,6 +32,8 @@ class ObjectBase(type):
         # Find field objects out from class_dict
         fields = {}
         """:type: dict[str, Field]"""
+        fields_py = {}
+        """:type: dict[str, Field]"""
         final_class_dict = {}
         for attr_name, attr_obj in six.iteritems(class_dict):
             if isinstance(attr_obj, Field):
@@ -39,9 +41,11 @@ class ObjectBase(type):
                 # noinspection PyProtectedMember
                 attr_obj._parse_name = attr_obj._parse_name or camelcase(attr_name)
                 fields[attr_name] = attr_obj
+                fields_py[attr_obj.python_name] = attr_obj
             else:
                 final_class_dict[attr_name] = attr_obj
         final_class_dict['_fields'] = fields
+        final_class_dict['_fields_py'] = fields_py
 
         # Update fields from bases
 
