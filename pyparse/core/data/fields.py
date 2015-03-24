@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
+from pyparse.core.data.types import GeoPoint
 
 
 class Field(object):
@@ -70,3 +71,14 @@ class DateTimeField(Field):
 
 class NumberField(Field):
     pass
+
+
+# noinspection PyPep8Naming
+def _create_python_convertible_field(name, PythonConvertibleClass):
+    return type(name, (Field,), {
+        'to_parse': staticmethod(lambda python_value: python_value.to_parse()),
+        'to_python': staticmethod(lambda parse_value: PythonConvertibleClass.to_python(parse_value))
+    })
+
+
+GeoPointField = _create_python_convertible_field('GeoPointField', GeoPoint)
