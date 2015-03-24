@@ -23,8 +23,8 @@ import six
 
 class Analytics(object):
 
-    @classmethod
-    def track(cls, event, at=None, **dimensions):
+    @staticmethod
+    def track(event, at=None, **dimensions):
         """
         :param event:
         :type event: str
