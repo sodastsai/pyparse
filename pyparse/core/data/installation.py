@@ -16,3 +16,21 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 from pyparse.core.data.object import Object
+from pyparse.core.data.fields import Field
+
+
+class Installation(Object):
+
+    badge = Field()
+    channels = Field()
+    time_zone = Field()
+    device_type = Field(readonly=True)
+    push_type = Field(readonly=True)
+    gcm_sender_id = Field(parse_name='GCMSenderId')
+    installation_id = Field(readonly=True)
+    device_token = Field()
+    channel_uris = Field()
+    app_name = Field()
+    app_version = Field()
+    parse_version = Field()
+    app_identifier = Field()

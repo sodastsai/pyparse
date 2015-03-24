@@ -15,10 +15,11 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
-from copy import copy
 import json
+
+from copy import copy
 import six
-from pyparse.core.object import ObjectBase
+from pyparse.core.data.object import ObjectBase
 from pyparse.request import request
 
 

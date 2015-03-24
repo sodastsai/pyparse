@@ -17,11 +17,11 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
 import dateutil.parser
-from pyparse.core.base import ObjectBase
-from pyparse.core.fields import Field, DateTimeField
+from pyparse.core.data.base import ObjectBase
+from pyparse.core.data.fields import Field, DateTimeField
 from pyparse.request import request
 import six
-from pyparse.core.query import Query
+from pyparse.core.data.query import Query
 
 
 @six.add_metaclass(ObjectBase)

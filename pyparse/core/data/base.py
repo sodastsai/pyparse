@@ -18,8 +18,8 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from functools import partial
 import os
 import six
-from .fields import Field, NumberField
-from ..utils import camelcase
+from pyparse.core.fields import Field, NumberField
+from pyparse.utils import camelcase
 
 _parse_object__module__ = __package__ + '.' + os.path.splitext('object.py')[0]
 
