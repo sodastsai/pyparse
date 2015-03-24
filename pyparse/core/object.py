@@ -237,14 +237,14 @@ class Object(object):
         """
         :type other: dict
         """
-        # TODO: Dirty bit
-        readonly_keys = set([key for key in kwargs if key in self._readonly_fields])
-        if other:
-            readonly_keys |= set([key for key in other if key in self._readonly_fields])
-        if len(readonly_keys) != 0:
-            raise KeyError('{} is a readonly field.'.format(', '.join(readonly_keys)))
+        update_dict = other or {}
+        update_dict.update(kwargs)
 
-        return self._content.update(other, **kwargs)
+        for field_name, field in six.iteritems(self._fields):
+            if field.readonly and field.parse_name in update_dict:
+                raise KeyError('{} is a readonly field.'.format(field.parse_name))
+
+        return self._content.update(update_dict)
 
     @property
     def as_dict(self):
