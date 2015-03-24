@@ -15,3 +15,20 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+import datetime
+
+
+def to_parse_iso8601(datetime_obj):
+    """
+    :type datetime_obj: datetime.datetime
+    :rtype: str
+    """
+    return datetime_obj.isoformat()[:-3]+'Z'
+
+
+def from_parse_iso8601(string):
+    """
+    :type string: str
+    :rtype: datetime.datetime
+    """
+    return datetime.datetime.strptime(string, '%Y-%m-%dT%H:%M:%S.%fZ')
