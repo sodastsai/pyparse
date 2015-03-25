@@ -39,7 +39,6 @@ class Request(object):
 
         >>> import string, random
         >>> rand_char = ''
-        >>> test_ans = ''
         >>> test_str = ''
         >>> for x in range(1, random.randrange(1, 21)):
         ...     rand_char = random.choice(string.ascii_letters)

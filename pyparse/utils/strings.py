@@ -79,9 +79,6 @@ def snakecase(camelcase_string):
 
     >>> # Random test generator
     >>> import string, random
-    >>> test_str = ''
-    >>> test_ans = ''
-    >>> rand_char = ''
     >>> rand_char = random.choice(string.ascii_lowercase)
     >>> test_ans = rand_char
     >>> test_str = rand_char
