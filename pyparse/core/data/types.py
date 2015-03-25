@@ -16,7 +16,6 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
-import six
 
 
 class ParseConvertible(object):
@@ -27,6 +26,9 @@ class ParseConvertible(object):
     @classmethod
     def to_python(cls, parse_dict):
         raise NotImplementedError('Implement how this type convet from Parse\'s representation.')
+
+
+# =========== GeoPoint ==========
 
 
 class GeoPoint(ParseConvertible):
@@ -64,6 +66,9 @@ class GeoPoint(ParseConvertible):
             raise TypeError('This is not a GeoPoint dict.')
 
         return cls(parse_dict['latitude'], parse_dict['longitude'])
+
+
+# =========== datetime ==========
 
 
 def datetime_to_parse_str(datetime_obj):
@@ -104,14 +109,11 @@ def datetime_dict_to_python(parse_dict):
     return datetime_str_to_python(parse_dict['iso'])
 
 
+# =========== guess ==========
+
+
 def guess_to_python(value):
-    if isinstance(value, six.string_types):
-        if ':' in value and 'T' in value and 'Z' in value and '-' in value:
-            try:
-                return datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-            except ValueError:
-                pass
-    elif isinstance(value, dict):
+    if isinstance(value, dict):
         value_type = value.get('__type', None)
         if value_type == 'GeoPoint':
             return GeoPoint.to_python(value)
