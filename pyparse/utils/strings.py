@@ -87,6 +87,7 @@ def snakecase(camelcase_string):
     >>> test_str = rand_char
     >>> # Generate rest of string
     >>> for x in range(1, 10):
+    ...
     ...     rand_char = random.choice(string.ascii_lowercase)
     ...     if random.choice([True, False]):
     ...         test_ans += '_'
@@ -106,6 +107,24 @@ def snakecase(camelcase_string):
 
 def snakify(string, lowercase=True):
     """
+    >>> import string, random
+    >>> test_str = ''
+    >>> test_ans = ''
+    >>> rand_char = ''
+    >>> for x in range(1, 10):
+    ...     rand_char = random.choice(string.ascii_letters)
+    ...     test_ans += rand_char
+    ...     test_str += rand_char
+    >>> for pos in range(len(test_str) - 1):
+    ...     if random.choice([True, False]) and pos != 0 and test_str [pos - 1] != ' ':
+    ...         test_str = test_str[:pos] + ' ' + test_str[pos:]
+    ...         test_ans = test_ans[:pos] + '_' + test_ans[pos:]
+    >>> lower = random.choice([True, False])
+    >>> if lower:
+    ...     test_ans = test_ans.lower()
+    >>> snakify(test_str, lower) == test_ans
+    True
+
     :type string: str
     :rtype: str
     """

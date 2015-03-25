@@ -15,7 +15,7 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
-from . import pyparse
+from pyparse import pyparse
 from copy import copy
 import json
 import requests
@@ -36,6 +36,17 @@ class Request(object):
         just call ```ParseRequest.generate_url('classes/<className>/<objectId>')```
 
         Reference: https://www.parse.com/docs/rest#general-quick
+
+        >>> import string, random
+        >>> rand_char = ''
+        >>> test_ans = ''
+        >>> test_str = ''
+        >>> for x in range(1, random.randrange(1, 21)):
+        ...     rand_char = random.choice(string.ascii_letters)
+        ...     test_str += rand_char
+        >>> test_ans = Request.SCHEME + '://' + Request.HOST + '/' + Request.VERSION + '/' + test_str
+        >>> Request.generate_url(test_str) == test_ans
+        True
 
         :param path: the path of object/collection
         :type path: str
@@ -100,6 +111,8 @@ class Request(object):
     @staticmethod
     def _request(verb, url, *args, **kwargs):
         """
+
+
         :rtype: dict
         """
         assert verb in ('get', 'post', 'put', 'delete'), 'verb only accepts get, post, put, and delete'
