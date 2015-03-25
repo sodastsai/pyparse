@@ -66,6 +66,44 @@ class GeoPoint(ParseConvertible):
         return cls(parse_dict['latitude'], parse_dict['longitude'])
 
 
+def datetime_to_parse_str(datetime_obj):
+    """
+    :type datetime_obj: datetime.datetime
+    :rtype: str
+    """
+    return datetime_obj.isoformat()[:-3]+'Z'
+
+
+def datetime_to_parse_dict(datetime_obj):
+    """
+    :type datetime_obj: datetime.datetime
+    :rtype: dict
+    """
+    return {
+        '__type': 'Date',
+        'iso': datetime_to_parse_str(datetime_obj),
+    }
+
+
+def datetime_str_to_python(parse_str):
+    """
+    :type parse_str: str
+    :rtype: datetime.datetime
+    """
+    return datetime.datetime.strptime(parse_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+def datetime_dict_to_python(parse_dict):
+    """
+    :type parse_dict: dict
+    :rtype: datetime.datetime
+    """
+    if parse_dict['__type'] != 'Date':
+        raise TypeError('This is not a GeoPoint dict.')
+
+    return datetime_str_to_python(parse_dict['iso'])
+
+
 def guess_to_python(value):
     if isinstance(value, six.string_types):
         if ':' in value and 'T' in value and 'Z' in value and '-' in value:
@@ -77,13 +115,16 @@ def guess_to_python(value):
         value_type = value.get('__type', None)
         if value_type == 'GeoPoint':
             return GeoPoint.to_python(value)
+        elif value_type == 'Date':
+            return datetime_dict_to_python(value)
 
     return value
 
 
 def guess_to_parse(value):
     if isinstance(value, datetime.datetime):
-        return value.isoformat()[:-3]+'Z'
+        # Since createdAt and updatedAt won't use this guess_to_parse, it's safe to return dict directly
+        return datetime_to_parse_dict(value)
     elif isinstance(value, ParseConvertible):
         return value.to_parse()
 

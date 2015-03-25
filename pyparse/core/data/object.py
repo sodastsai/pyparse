@@ -17,7 +17,7 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
 from pyparse.core.data.base import ObjectBase
-from pyparse.core.data.fields import Field, DateTimeField
+from pyparse.core.data.fields import Field, AutoDateTimeField
 from pyparse.core.data.types import guess_to_python, guess_to_parse
 from pyparse.request import request
 import six
@@ -30,8 +30,8 @@ class Object(object):
     # Field
 
     object_id = Field(readonly=True)
-    created_at = DateTimeField(readonly=True)
-    updated_at = DateTimeField(readonly=True)
+    created_at = AutoDateTimeField(readonly=True)
+    updated_at = AutoDateTimeField(readonly=True)
 
     _fields = None
     """:type: dict[str, Field]"""

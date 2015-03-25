@@ -16,7 +16,8 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
-from pyparse.core.data.types import GeoPoint
+from pyparse.core.data.types import (GeoPoint, datetime_to_parse_str, datetime_dict_to_python, datetime_str_to_python,
+                                     datetime_to_parse_dict)
 
 
 class Field(object):
@@ -50,7 +51,7 @@ class Field(object):
         return parse_value
 
 
-class DateTimeField(Field):
+class AutoDateTimeField(Field):
 
     @staticmethod
     def to_parse(python_value):
@@ -58,7 +59,7 @@ class DateTimeField(Field):
         :type python_value: datetime.datetime
         :rtype: str
         """
-        return python_value.isoformat()[:-3]+'Z'
+        return datetime_to_parse_str(python_value)
 
     @staticmethod
     def to_python(parse_value):
@@ -66,7 +67,26 @@ class DateTimeField(Field):
         :type parse_value: str
         :rtype: datetime.datetime
         """
-        return datetime.datetime.strptime(parse_value, '%Y-%m-%dT%H:%M:%S.%fZ')
+        return datetime_str_to_python(parse_value)
+
+
+class DateTimeField(Field):
+
+    @staticmethod
+    def to_parse(python_value):
+        """
+        :type python_value: datetime.datetime
+        :rtype: dict
+        """
+        return datetime_to_parse_dict(python_value)
+
+    @staticmethod
+    def to_python(parse_value):
+        """
+        :type parse_value: dict
+        :rtype: datetime.datetime
+        """
+        return datetime_dict_to_python(parse_value)
 
 
 class NumberField(Field):
