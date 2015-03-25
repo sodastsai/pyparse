@@ -16,9 +16,12 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import os
+import six
+from pyparse.utils.lang import SingletonBase
 
 
-class _ParsePy(object):
+@six.add_metaclass(SingletonBase)
+class ParsePy(object):
 
     def __init__(self):
         self._application_id = None
@@ -68,4 +71,4 @@ class _ParsePy(object):
         self._master_key = master_key
 
 
-pyparse = _ParsePy()
+pyparse = ParsePy()
