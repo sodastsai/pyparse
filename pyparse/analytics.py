@@ -15,8 +15,8 @@
 #
 
 from __future__ import unicode_literals, division, absolute_import, print_function
+from pyparse.core.data.types import datetime_to_parse_dict
 from pyparse.request import request
-from pyparse.utils.date import to_parse_iso8601
 from pyparse.utils.strings import snakify
 import six
 
@@ -43,10 +43,7 @@ class Analytics(object):
         if dimensions:
             arguments['dimensions'] = dimensions
         if at:
-            arguments['at'] = {
-                '__type': 'Date',
-                'iso': to_parse_iso8601(at),
-            }
+            arguments['at'] = datetime_to_parse_dict(at)
 
         return request('post', 'events/{}'.format(event), arguments=arguments)
 
