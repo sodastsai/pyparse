@@ -18,6 +18,38 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 
 class SingletonBase(type):
+    """
+    This metaclass helps you to create a class which always returns a singleton instance
+    (i.e. there would be only one instance (shared) of this class)
+
+    >>> import six
+    >>> @six.add_metaclass(SingletonBase)
+    ... class ClassA(object):
+    ...     pass
+    ...
+    >>> @six.add_metaclass(SingletonBase)
+    ... class ClassB(object):
+    ...     pass
+    ...
+    >>> class ClassC(object):
+    ...     pass
+    ...
+    >>> a1 = ClassA()
+    >>> a2 = ClassA()
+    >>> b1 = ClassB()
+    >>> b2 = ClassB()
+    >>> c1 = ClassC()
+    >>> c2 = ClassC()
+    >>> a1 is a2
+    True
+    >>> b1 is b2
+    True
+    >>> c1 is c2
+    False
+    >>> a1 is b1
+    False
+
+    """
 
     def __init__(cls, *args, **kwargs):
         super(SingletonBase, cls).__init__(*args, **kwargs)
