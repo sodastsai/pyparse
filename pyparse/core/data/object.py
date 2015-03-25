@@ -35,7 +35,7 @@ class Object(object):
 
     _fields = None
     """:type: dict[str, Field]"""
-    _fields_py = None
+    _fields_parse = None
     """:type: dict[str, Field]"""
 
     # Object
@@ -58,7 +58,7 @@ class Object(object):
         # Populate from kwargs
         """:type: dict[str, Field]"""
         for key, value in six.iteritems(kwargs):
-            field = self._fields_py.get(key, None)
+            field = self._fields.get(key, None)
             if field:
                 key = field.parse_name
             self._content[key] = value
@@ -76,7 +76,7 @@ class Object(object):
         return self._content[key] if key in self._content else None
 
     def set(self, key, value):
-        field = self._fields.get(key, None)
+        field = self._fields_parse.get(key, None)
         if field and field.readonly:
             raise KeyError('{} is a readonly field.'.format(key))
 
@@ -99,19 +99,21 @@ class Object(object):
         :rtype: Object
         """
         instance = cls()
+        instance._content.update(cls._parse_dict_to_python(raw_parse_object))
+        return instance
 
-        for field_name, value in six.iteritems(raw_parse_object):
+    @classmethod
+    def _parse_dict_to_python(cls, raw_parse_dict):
+        result = {}
+        for field_name, value in six.iteritems(raw_parse_dict):
             # noinspection PyProtectedMember
-            if field_name in cls._fields:
-                # noinspection PyProtectedMember
-                field = cls._fields[field_name]
+            field = cls._fields_parse.get(field_name, None)
+            if field:
                 value = field.to_python(value)
             else:
                 value = guess_to_python(value)
-
-            instance._content[field_name] = value
-
-        return instance
+            result[field_name] = value
+        return result
 
     # Field Action
 
@@ -123,8 +125,8 @@ class Object(object):
                     'amount': step,
                 }
             }
-            resp = request('put', self._remote_path(self.object_id), arguments=arguments)
-            self._content.update(resp)
+            response = request('put', self._remote_path(self.object_id), arguments=arguments)
+            self._content.update(self._parse_dict_to_python(response))
         else:
             self.set(field_parse_name, self.get(field_parse_name)+step)
 
@@ -177,7 +179,7 @@ class Object(object):
         # Convert Python obj in payload to Parse obj
         final_payload = {}
         for key, value in six.iteritems(payload):
-            field = self._fields.get(key, None)
+            field = self._fields_parse.get(key, None)
             if field:
                 value = field.to_parse(value)
             else:
@@ -193,7 +195,7 @@ class Object(object):
             # New created - update info
             response['updatedAt'] = response['createdAt']
 
-        self._content.update(response)
+        self._content.update(self._parse_dict_to_python(response))
 
     def delete(self):
         if not self.object_id:
@@ -238,9 +240,16 @@ class Object(object):
         :type other: dict
         """
         update_dict = other or {}
-        update_dict.update(kwargs)
 
-        for field_name, field in six.iteritems(self._fields):
+        for field_name, value in six.iteritems(kwargs):
+            field = self._fields.get(field_name, None)
+            if field:
+                key = field.parse_name
+            else:
+                key = field_name
+            update_dict[key] = value
+
+        for field_name, field in six.iteritems(self._fields_parse):
             if field.readonly and field.parse_name in update_dict:
                 raise KeyError('{} is a readonly field.'.format(field.parse_name))
 

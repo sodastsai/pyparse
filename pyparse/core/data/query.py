@@ -19,10 +19,9 @@ import json
 
 from copy import copy
 from pyparse.core.data.types import guess_to_parse
-from pyparse.utils.strings import camelcase
-import six
 from pyparse.core.data.object import ObjectBase
 from pyparse.request import request
+import six
 
 
 class Query(object):

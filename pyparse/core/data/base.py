@@ -32,7 +32,7 @@ class ObjectBase(type):
         # Find field objects out from class_dict
         fields = {}
         """:type: dict[str, Field]"""
-        fields_py = {}
+        fields_parse = {}
         """:type: dict[str, Field]"""
         final_class_dict = {}
         for attr_name, attr_obj in six.iteritems(class_dict):
@@ -40,12 +40,13 @@ class ObjectBase(type):
                 attr_obj._python_name = attr_name
                 # noinspection PyProtectedMember
                 attr_obj._parse_name = attr_obj._parse_name or camelcase(attr_name)
-                fields[attr_name] = attr_obj
-                fields_py[attr_obj.python_name] = attr_obj
+
+                fields[attr_obj.python_name] = attr_obj
+                fields_parse[attr_obj.parse_name] = attr_obj
             else:
                 final_class_dict[attr_name] = attr_obj
         final_class_dict['_fields'] = fields
-        final_class_dict['_fields_py'] = fields_py
+        final_class_dict['_fields_parse'] = fields_parse
 
         # Update fields from bases
 
@@ -55,6 +56,8 @@ class ObjectBase(type):
                 if issubclass(base, Object):
                     # noinspection PyProtectedMember
                     final_class_dict['_fields'].update(base._fields)
+                    # noinspection PyProtectedMember
+                    final_class_dict['_fields_parse'].update(base._fields_parse)
 
         # Setup class name and property
         final_class_dict['class_name'] = final_class_dict.get('class_name', class_name)
