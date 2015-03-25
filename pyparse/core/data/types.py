@@ -70,13 +70,65 @@ class GeoPoint(ParseConvertible):
 
 # =========== datetime ==========
 
+class UTC(datetime.tzinfo):
+
+    @staticmethod
+    def utcoffset(*args, **kwargs):
+        return datetime.timedelta(0)
+
+    @staticmethod
+    def tzname(*args, **kwargs):
+        return "UTC"
+
+    @staticmethod
+    def dst(*args, **kwargs):
+        return datetime.timedelta(0)
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return self.tzname()
+
+
+class LocalTimezone(datetime.tzinfo):
+
+    @staticmethod
+    def utcoffset(*args, **kwargs):
+        timedelta = datetime.datetime.now() - datetime.datetime.utcnow()
+        return datetime.timedelta(minutes=round(timedelta.total_seconds()/60))
+
+    @staticmethod
+    def tzname(*args, **kwargs):
+        return "<Local>"
+
+    @staticmethod
+    def dst(*args, **kwargs):
+        return datetime.timedelta(0)
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return self.tzname()
+
 
 def datetime_to_parse_str(datetime_obj):
     """
     :type datetime_obj: datetime.datetime
     :rtype: str
     """
-    return datetime_obj.isoformat()[:-3]+'Z'
+    if not datetime_obj.tzinfo:
+        datetime_obj = datetime_obj.replace(tzinfo=LocalTimezone())
+    return datetime_obj.astimezone(UTC()).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]+'Z'
+
+
+def datetime_str_to_python(parse_str):
+    """
+    :type parse_str: str
+    :rtype: datetime.datetime
+    """
+    return datetime.datetime.strptime(parse_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=UTC())
 
 
 def datetime_to_parse_dict(datetime_obj):
@@ -88,14 +140,6 @@ def datetime_to_parse_dict(datetime_obj):
         '__type': 'Date',
         'iso': datetime_to_parse_str(datetime_obj),
     }
-
-
-def datetime_str_to_python(parse_str):
-    """
-    :type parse_str: str
-    :rtype: datetime.datetime
-    """
-    return datetime.datetime.strptime(parse_str, '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
 def datetime_dict_to_python(parse_dict):
