@@ -123,7 +123,7 @@ class Request(object):
         if response.status_code >= 500:
             raise ParseInternalServerError(response_dict['code'], response_dict['error'])
         elif response.status_code >= 400:
-            raise ParseError(response_dict['code'], response_dict['error'])
+            raise ParseError(response_dict.get('code', -1), response_dict['error'])
         else:
             return response_dict
 
@@ -156,6 +156,33 @@ class Request(object):
 
 def request(verb, path, arguments=None, headers=None):
     """Request with Parse REST API
+    >>> from datetime import datetime, timedelta
+    >>> parse_class = 'classes/Test'
+    >>> now_date = datetime.now() + timedelta(hours=-8)
+    >>>
+    >>> # Post
+    >>> resp_post = request('post', parse_class, {'C1': 'Test'})
+    >>> resp_post_date = datetime.strptime(resp_post['createdAt'], '%Y-%m-%dT%H:%M:%S.%fZ')
+    >>> now_date - resp_post_date < timedelta(0, 4)
+    True
+
+    >>> # Get posted data and compare
+    >>> resp_get = request('get', parse_class)
+    >>> is_in_cloud = False
+    >>> for element in resp_get['results']:
+    ...     if element['objectId'] == resp_post['objectId']:
+    ...         is_in_cloud = True
+    ...         resp_get_date = datetime.strptime(element['createdAt'], '%Y-%m-%dT%H:%M:%S.%fZ')
+    >>> is_in_cloud
+    True
+    >>> resp_get_date == resp_post_date
+    True
+
+    >>> # Delete posted data
+    >>> resp_del = request('delete', parse_class + '/' + resp_post['objectId'])
+    >>> resp_del
+    {}
+
     :param verb: HTTP verb used for this request. (should be get, post, put, or delete)
     :type: str
     :param path: the path of a Parse object or collection
