@@ -95,9 +95,14 @@ class NumberField(Field):
 
 # noinspection PyPep8Naming
 def _create_python_convertible_field(name, PythonConvertibleClass):
+    """
+    :type name: str
+    :type PythonConvertibleClass: class
+    :rtype: class
+    """
     return type(name, (Field,), {
         'to_parse': staticmethod(lambda python_value: python_value.to_parse()),
-        'to_python': staticmethod(lambda parse_value: PythonConvertibleClass.to_python(parse_value))
+        'to_python': staticmethod(lambda parse_value: PythonConvertibleClass.to_python(parse_value)),
     })
 
 

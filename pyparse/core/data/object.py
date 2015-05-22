@@ -228,6 +228,13 @@ class Object(object):
         for kv_pair in six.iteritems(self._content):
             yield kv_pair
 
+    def keys(self):
+        """
+        :rtype: collections.Iterable[str]
+        """
+        for key in six.iterkeys(self._content):
+            yield key
+
     def values(self):
         """
         :rtype: collections.Iterable[object]
