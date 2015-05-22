@@ -52,18 +52,24 @@ class Request(object):
         :return: a url string representing the object/collection at Parse's server
         :rtype: str
         """
-        if path.startswith('/'):
-            path = path[1:]
         return '{scheme}://{host}/{version}/{path}'.format(
             scheme=cls.SCHEME,
             host=cls.HOST,
             version=cls.VERSION,
-            path=path,
+            path=path.strip('/'),
         )
 
     @staticmethod
     def authentication_headers():
         """Get the header with authenticate credentials used to call Parse REST API
+
+        >>> from pyparse import pyparse
+        >>> from pyparse.request import Request
+        >>> pyparse.setup('TEST_APP_ID', 'TEST_API_KEY')
+        >>> Request.authentication_headers() == \
+        { 'X-Parse-Application-Id': 'TEST_APP_ID', 'X-Parse-REST-API-Key': 'TEST_API_KEY' }
+        True
+
         :return: a dict contains authentication header fields and corresponding values
         :rtype: dict
         """
@@ -80,6 +86,17 @@ class Request(object):
     # Object
 
     def __init__(self, path, arguments=None, headers=None):
+        """Create a request instance
+        :param path: Request path. The request path doesn't have to contains the API version.
+                     for example, if you want to request `/1/installations`, just pass `installations` in.
+        :type: str
+        :param arguments: Arguments dict used for this request
+        :type: dict
+        :param headers: Headers map used for this request
+        :type: dict[str, str]
+        :return: A `Request` object instance
+        :rtype: Request
+        """
         self._path = path
         """:type: str"""
         self._arguments = arguments
@@ -89,10 +106,25 @@ class Request(object):
 
     @property
     def url(self):
+        """Finalized URL of this Reqeust object
+
+        >>> from pyparse.request import Request
+        >>> Request('classes/TestClass').url
+        'https://api.parse.com/1/classes/TestClass'
+        >>> Request('classes/TestClass/').url
+        'https://api.parse.com/1/classes/TestClass'
+        >>> Request('/classes/TestClass').url
+        'https://api.parse.com/1/classes/TestClass'
+        >>> Request('/classes/TestClass/').url
+        'https://api.parse.com/1/classes/TestClass'
+
+        :return: url of this reqeust object
+        :rtype: str
+        """
         return self.generate_url(self._path)
 
     def arguments(self, use_json=False):
-        if use_json and self._arguments:
+        if use_json and self._arguments is not None:
             return json.dumps(self._arguments, separators=(',', ':'))
         return self._arguments
 
