@@ -34,6 +34,13 @@ class ParsePy(object):
     @property
     def application_id(self):
         """Get the application id used to call Parse REST API
+
+        >>> import os
+        >>> from pyparse import pyparse
+        >>> os.environ['PARSE_APPLICATION_ID'] = 'TEST_ID'
+        >>> pyparse.application_id == 'TEST_ID'
+        True
+
         :return: the application id string
         :rtype: str
         """
@@ -42,6 +49,13 @@ class ParsePy(object):
     @property
     def rest_api_key(self):
         """Get the rest api key used to call Parse REST API
+
+        >>> import os
+        >>> from pyparse import pyparse
+        >>> os.environ['PARSE_REST_API_KEY'] = 'TEST_API_KEY'
+        >>> pyparse.rest_api_key == 'TEST_API_KEY'
+        True
+
         :return: the rest api key string
         :rtype: str
         """
@@ -50,6 +64,13 @@ class ParsePy(object):
     @property
     def master_key(self):
         """Get the master key used to call Parse REST API
+
+        >>> import os
+        >>> from pyparse import pyparse
+        >>> os.environ['PARSE_MASTER_KEY'] = 'TEST_MASTER_KEY'
+        >>> pyparse.master_key == 'TEST_MASTER_KEY'
+        True
+
         :return: the master key string
         :rtype: str
         """
@@ -57,6 +78,23 @@ class ParsePy(object):
 
     def setup(self, application_id=None, rest_api_key=None, master_key=None):
         """Setup PyParse with specified application id and rest api key
+
+        >>> from pyparse import pyparse
+        >>> pyparse.setup('TEST_APP_ID', 'TEST_API_KEY')
+        >>> pyparse.application_id == 'TEST_APP_ID'
+        True
+        >>> pyparse.rest_api_key == 'TEST_API_KEY'
+        True
+        >>> pyparse.master_key is None
+        True
+        >>> pyparse.setup('TEST_APP_ID2', 'TEST_API_KEY2', 'TEST_MASTER_KEY')
+        >>> pyparse.application_id == 'TEST_APP_ID2'
+        True
+        >>> pyparse.rest_api_key == 'TEST_API_KEY2'
+        True
+        >>> pyparse.master_key == 'TEST_MASTER_KEY'
+        True
+
         :param application_id: the application id to be called
         :type application_id: str
         :param rest_api_key: the rest api key to be used
