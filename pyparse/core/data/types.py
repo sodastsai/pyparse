@@ -148,7 +148,7 @@ def datetime_dict_to_python(parse_dict):
     :rtype: datetime.datetime
     """
     if parse_dict['__type'] != 'Date':
-        raise TypeError('This is not a GeoPoint dict.')
+        raise TypeError('This is not a Datetime dict.')
 
     return datetime_str_to_python(parse_dict['iso'])
 
