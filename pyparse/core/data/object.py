@@ -65,6 +65,12 @@ class Object(object):
 
         self._modified_content = {}
 
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return repr(self._content)
+
     # Content
 
     @property
