@@ -102,9 +102,14 @@ class Query(object):
                 field = self._object_class._fields.get(key, None)
                 if field:
                     key = field.parse_name
-                    value = field.to_parse(value)
+                    value_to_parse = field.to_parse
                 else:
-                    value = guess_to_parse(value)
+                    value_to_parse = guess_to_parse
+
+                if isinstance(value, (list, tuple)):
+                    value = list(map(value_to_parse, value))
+                else:
+                    value = value_to_parse(value)
 
                 if operator == 'exact':
                     self._where_dict[key] = value
