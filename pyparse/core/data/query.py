@@ -188,6 +188,13 @@ class Query(object):
         for parse_object in self._contents:
             yield parse_object
 
+    @property
+    def contents(self):
+        if not self.evaluated:
+            self.fetch()
+
+        return self._contents
+
     def fetch(self):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         contents = request('get', self.request_path, arguments=self.get_arguments())['results']
