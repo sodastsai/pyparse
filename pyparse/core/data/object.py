@@ -19,7 +19,7 @@ from copy import deepcopy
 from pyparse.core.data.base import ObjectBase
 from pyparse.core.data.fields import Field, AutoDateTimeField
 from pyparse.core.data.types import ParseConvertible
-from pyparse.request import request
+from pyparse.request import request_parse
 from pyparse.core.data.query import Query
 
 
@@ -129,7 +129,7 @@ class Object(object, metaclass=ObjectBase):
                     'amount': step,
                 }
             }
-            response = request('put', self._remote_path(self.object_id), arguments=arguments)
+            response = request_parse('put', self._remote_path(self.object_id), arguments=arguments)
             self._content.update(self._parse_dict_to_python(response))
         else:
             self.set(field_parse_name, self.get(field_parse_name)+step)
@@ -148,7 +148,7 @@ class Object(object, metaclass=ObjectBase):
         :return:
         :rtype: Object
         """
-        return cls.from_parse(request('get', cls._remote_path(object_id)))
+        return cls.from_parse(request_parse('get', cls._remote_path(object_id)))
 
     @classmethod
     def query(cls):
@@ -191,7 +191,7 @@ class Object(object, metaclass=ObjectBase):
             final_payload[key] = value
         payload = final_payload
 
-        response = request(verb, remote_path, arguments=payload)
+        response = request_parse(verb, remote_path, arguments=payload)
         if self.object_id:
             # Updated - clean up
             self._modified_content = {}
@@ -204,7 +204,7 @@ class Object(object, metaclass=ObjectBase):
     def delete(self):
         if not self.object_id:
             return
-        request('delete', self._remote_path(self.object_id))
+        request_parse('delete', self._remote_path(self.object_id))
         del self._content['objectId']
 
     # Dict

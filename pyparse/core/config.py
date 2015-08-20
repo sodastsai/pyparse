@@ -16,7 +16,7 @@
 
 from copy import deepcopy
 
-from pyparse.request import request
+from pyparse.request import request_parse
 from pyparse.utils.lang import SingletonBase
 
 
@@ -29,7 +29,7 @@ class Config(object, metaclass=SingletonBase):
         self.fetch()
 
     def fetch(self):
-        self._content.update(request('get', 'config')['params'])
+        self._content.update(request_parse('get', 'config')['params'])
 
     def __repr__(self):
         return repr(self._content)

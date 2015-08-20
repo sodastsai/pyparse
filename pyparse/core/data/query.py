@@ -19,7 +19,7 @@ import json
 
 from pyparse.core.data.types import ParseConvertible
 from pyparse.core.data.object import ObjectBase
-from pyparse.request import request
+from pyparse.request import request_parse
 
 
 class Query(object):
@@ -195,7 +195,7 @@ class Query(object):
 
     def fetch(self):
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
-        contents = request('get', self.request_path, arguments=self.get_arguments())['results']
+        contents = request_parse('get', self.request_path, arguments=self.get_arguments())['results']
 
         if self._object_class:
             self._contents = [self._object_class.from_parse(content) for content in contents]
@@ -212,4 +212,4 @@ class Query(object):
         :return: the number of all objects which satisfy this query
         :rtype: int
         """
-        return request('get', self.request_path, arguments=self.get_arguments(count='1'))['count']
+        return request_parse('get', self.request_path, arguments=self.get_arguments(count='1'))['count']

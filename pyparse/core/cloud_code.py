@@ -14,15 +14,15 @@
 # limitations under the License.
 #
 
-from pyparse.request import request
+from pyparse.request import request_parse
 
 
 class CloudCode(object):
 
     @staticmethod
     def call(func_name, **arguments):
-        return request('post', 'functions/{}'.format(func_name), arguments=arguments)
+        return request_parse('post', 'functions/{}'.format(func_name), arguments=arguments)
 
     @staticmethod
     def background_job(job_name, **arguments):
-        return request('post', 'jobs/{}'.format(job_name), arguments=arguments)
+        return request_parse('post', 'jobs/{}'.format(job_name), arguments=arguments)

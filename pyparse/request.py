@@ -44,7 +44,7 @@ class Request(object):
         >>> for x in range(1, random.randrange(1, 21)):
         ...     rand_char = random.choice(string.ascii_letters)
         ...     test_str += rand_char
-        >>> test_ans = Request.SCHEME + '://' + Request.HOST + '/' + Request.VERSION + '/' + test_str
+        >>> test_ans = 'https://api.parse.com/1/' + test_str
         >>> Request.generate_url(test_str) == test_ans
         True
 
@@ -64,11 +64,11 @@ class Request(object):
     def authentication_headers():
         """Get the header with authenticate credentials used to call Parse REST API
 
-        >>> from pyparse import pyparse
+        >>> import os
         >>> from pyparse.request import Request
-        >>> pyparse.setup('TEST_APP_ID', 'TEST_API_KEY')
         >>> Request.authentication_headers() == \
-        { 'X-Parse-Application-Id': 'TEST_APP_ID', 'X-Parse-REST-API-Key': 'TEST_API_KEY' }
+        {'X-Parse-Application-Id': os.environ['PARSE_APPLICATION_ID'], \
+         'X-Parse-REST-API-Key': os.environ['PARSE_REST_API_KEY'] }
         True
 
         :return: a dict contains authentication header fields and corresponding values
@@ -125,11 +125,40 @@ class Request(object):
         return self.generate_url(self._path)
 
     def arguments(self, use_json=False):
+        """Finalized arguments of this Request object
+
+        >>> from pyparse.request import Request
+        >>> Request('classes/TestClass', arguments={'answer': 42}).arguments()
+        {'answer': 42}
+        >>> Request('classes/TestClass', arguments={'answer': 42}).arguments(use_json=True)
+        '{"answer":42}'
+
+        :param use_json: Return arguments value in json format
+        :type use_json: bool
+        :rtype dict:
+        """
         if use_json and self._arguments is not None:
             return json.dumps(self._arguments, separators=(',', ':'))
         return self._arguments
 
     def headers(self, post=False):
+        """Finalized headers of this Request object
+
+        >>> from pyparse.request import Request
+        >>> import os
+        >>> Request('classes/TestClass', headers={'answer': 42}).headers() == \
+        {'answer': 42, 'X-Parse-Application-Id': os.environ['PARSE_APPLICATION_ID'], \
+         'X-Parse-REST-API-Key': os.environ['PARSE_REST_API_KEY']}
+        True
+        >>> Request('classes/TestClass', headers={'answer': 42}).headers(post=True) == \
+        {'answer': 42, 'X-Parse-Application-Id': os.environ['PARSE_APPLICATION_ID'], \
+         'X-Parse-REST-API-Key': os.environ['PARSE_REST_API_KEY'], 'Content-Type': 'application/json'}
+        True
+
+        :param post: A flag indicating whether this header dict is used for POST request or not
+        :type post: bool
+        :rtype: dict
+        """
         header = copy(self._headers)
         header.update(self.authentication_headers())
 
@@ -140,10 +169,21 @@ class Request(object):
 
     # Request and response
 
+    # noinspection PyProtectedMember
     @staticmethod
     def _request(verb, url, *args, **kwargs):
         """
 
+        >>> from pyparse.request import Request
+        >>> import requests
+        >>> Request._request('get', 'https://httpbin.org/ip', params={'answer': 42}, headers={'X-PYPARSE': 1}) == \
+        requests.get('https://httpbin.org/ip', params={'answer': 42}, headers={'X-PYPARSE': 1}).json()
+        True
+        >>> try:
+        ...     Request._request('FLUSH', '')
+        ... except AssertionError as e:
+        ...     str(e) == 'verb only accepts get, post, put, and delete'
+        True
 
         :rtype: dict
         """
@@ -187,7 +227,7 @@ class Request(object):
         return self._request('delete', self.url, params=self.arguments(), headers=self.headers())
 
 
-def request(verb, path, arguments=None, headers=None):
+def request_parse(verb, path, arguments=None, headers=None):
     """Request with Parse REST API
     :param verb: HTTP verb used for this request. (should be get, post, put, or delete)
     :type: str

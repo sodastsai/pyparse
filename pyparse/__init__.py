@@ -35,10 +35,8 @@ class ParsePy(object, metaclass=SingletonBase):
 
         >>> import os
         >>> from pyparse import pyparse
-        >>> os.environ['PARSE_APPLICATION_ID'] = 'TEST_ID'
-        >>> pyparse.application_id == 'TEST_ID'
+        >>> os.environ['PARSE_APPLICATION_ID'] == pyparse.application_id
         True
-        >>> del os.environ['PARSE_APPLICATION_ID']
 
         :return: the application id string
         :rtype: str
@@ -51,10 +49,8 @@ class ParsePy(object, metaclass=SingletonBase):
 
         >>> import os
         >>> from pyparse import pyparse
-        >>> os.environ['PARSE_REST_API_KEY'] = 'TEST_API_KEY'
-        >>> pyparse.rest_api_key == 'TEST_API_KEY'
+        >>> os.environ['PARSE_REST_API_KEY'] == pyparse.rest_api_key
         True
-        >>> del os.environ['PARSE_REST_API_KEY']
 
         :return: the rest api key string
         :rtype: str
@@ -67,10 +63,8 @@ class ParsePy(object, metaclass=SingletonBase):
 
         >>> import os
         >>> from pyparse import pyparse
-        >>> os.environ['PARSE_MASTER_KEY'] = 'TEST_MASTER_KEY'
-        >>> pyparse.master_key == 'TEST_MASTER_KEY'
+        >>> os.environ.get('PARSE_MASTER_KEY', None) == pyparse.master_key
         True
-        >>> del os.environ['PARSE_MASTER_KEY']
 
         :return: the master key string
         :rtype: str
@@ -81,6 +75,8 @@ class ParsePy(object, metaclass=SingletonBase):
         """Setup PyParse with specified application id and rest api key
 
         >>> from pyparse import pyparse
+        >>> import os
+        >>> application_id, rest_api_key = (os.environ['PARSE_APPLICATION_ID'], os.environ['PARSE_REST_API_KEY'])
         >>> pyparse.setup('TEST_APP_ID', 'TEST_API_KEY')
         >>> pyparse.application_id == 'TEST_APP_ID'
         True
@@ -95,6 +91,7 @@ class ParsePy(object, metaclass=SingletonBase):
         True
         >>> pyparse.master_key == 'TEST_MASTER_KEY'
         True
+        >>> pyparse.setup(application_id, rest_api_key)
 
         :param application_id: the application id to be called
         :type application_id: str

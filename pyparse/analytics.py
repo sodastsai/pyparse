@@ -15,7 +15,7 @@
 #
 
 from pyparse.core.data.types import datetime_to_parse_dict
-from pyparse.request import request
+from pyparse.request import request_parse
 from pyparse.utils.strings import snakify
 
 
@@ -43,7 +43,7 @@ class Analytics(object):
         if at:
             arguments['at'] = datetime_to_parse_dict(at)
 
-        return request('post', 'events/{}'.format(event), arguments=arguments)
+        return request_parse('post', 'events/{}'.format(event), arguments=arguments)
 
     @classmethod
     def app_opened(cls, at=None):
