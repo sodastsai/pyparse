@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from pyparse.request import request
 
 

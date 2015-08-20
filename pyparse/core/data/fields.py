@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
+
 from pyparse.core.data.types import (GeoPoint, datetime_to_parse_str, datetime_dict_to_python, datetime_str_to_python,
                                      datetime_to_parse_dict)
 

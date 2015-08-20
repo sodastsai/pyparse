@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from pyparse.core.data.object import Object
 from pyparse.core.data.fields import Field
 

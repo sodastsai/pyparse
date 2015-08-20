@@ -14,10 +14,9 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from functools import partial
 import os
-import six
+
 from pyparse.core.data.fields import Field, NumberField
 from pyparse.utils.strings import camelcase
 
@@ -35,7 +34,7 @@ class ObjectBase(type):
         fields_parse = {}
         """:type: dict[str, Field]"""
         final_class_dict = {}
-        for attr_name, attr_obj in six.iteritems(class_dict):
+        for attr_name, attr_obj in class_dict.items():
             if isinstance(attr_obj, Field):
                 attr_obj._python_name = attr_name
                 # noinspection PyProtectedMember
@@ -64,7 +63,7 @@ class ObjectBase(type):
         final_class_dict['is_anonymous_class'] = False
 
         # Add fields back as value property
-        for field_name, field in six.iteritems(fields):
+        for field_name, field in fields.items():
             final_class_dict[field_name] = property(
                 fget=mcs._getter(field),
                 fset=mcs._setter(field) if not field.readonly else None
@@ -103,7 +102,7 @@ class ObjectBase(type):
         """:type: dict[str, Field]"""
 
         # Setup incrementable fields
-        for field_name, field in six.iteritems(fields):
+        for field_name, field in fields.items():
             if isinstance(field, NumberField):
                 setattr(klass, 'increment_{}'.format(field_name), partial(klass.increment, field.parse_name))
 

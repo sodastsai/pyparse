@@ -14,21 +14,16 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
-
 
 class SingletonBase(type):
     """
     This metaclass helps you to create a class which always returns a singleton instance
     (i.e. there would be only one instance (shared) of this class)
 
-    >>> import six
-    >>> @six.add_metaclass(SingletonBase)
-    ... class ClassA(object):
+    >>> class ClassA(object, metaclass=SingletonBase):
     ...     pass
     ...
-    >>> @six.add_metaclass(SingletonBase)
-    ... class ClassB(object):
+    >>> class ClassB(object, metaclass=SingletonBase):
     ...     pass
     ...
     >>> class ClassC(object):

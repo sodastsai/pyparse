@@ -14,14 +14,12 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
+from copy import copy
 import json
 
-from copy import copy
 from pyparse.core.data.types import ParseConvertible
 from pyparse.core.data.object import ObjectBase
 from pyparse.request import request
-import six
 
 
 class Query(object):
@@ -84,7 +82,7 @@ class Query(object):
         """
         assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
 
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             # Find keypaths and operators
             key_paths = key.split('__')
             if key_paths[-1] in self._filter_operators:

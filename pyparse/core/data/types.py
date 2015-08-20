@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
-import six
 
 _registered_parse_convertible_types = {}
 
@@ -32,8 +30,7 @@ class ParseConvertibleType(type):
                 _registered_parse_convertible_types[parse_type_name_func()] = cls
 
 
-@six.add_metaclass(ParseConvertibleType)
-class ParseConvertible(object):
+class ParseConvertible(object, metaclass=ParseConvertibleType):
 
     def to_parse(self):
         raise NotImplementedError('Implement how this type convet to Parse\'s representation.')

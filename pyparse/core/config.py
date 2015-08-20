@@ -14,15 +14,13 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
+
 from pyparse.request import request
 from pyparse.utils.lang import SingletonBase
-import six
 
 
-@six.add_metaclass(SingletonBase)
-class Config(object):
+class Config(object, metaclass=SingletonBase):
 
     def __init__(self):
         super(Config, self).__init__()
@@ -49,22 +47,19 @@ class Config(object):
         """
         :rtype: collections.Iterable[str]
         """
-        for key in self._content:
-            yield key
+        return self._content.__iter__()
 
     def items(self):
         """
         :rtype: collections.Iterable[(str, object)]
         """
-        for kv_pair in six.iteritems(self._content):
-            yield kv_pair
+        return self._content.items()
 
     def values(self):
         """
         :rtype: collections.Iterable[object]
         """
-        for value in six.itervalues(self._content):
-            yield value
+        return self._content.values()
 
     @property
     def as_dict(self):

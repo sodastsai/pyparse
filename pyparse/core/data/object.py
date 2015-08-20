@@ -14,18 +14,16 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from copy import deepcopy
+
 from pyparse.core.data.base import ObjectBase
 from pyparse.core.data.fields import Field, AutoDateTimeField
 from pyparse.core.data.types import ParseConvertible
 from pyparse.request import request
-import six
 from pyparse.core.data.query import Query
 
 
-@six.add_metaclass(ObjectBase)
-class Object(object):
+class Object(object, metaclass=ObjectBase):
 
     # Field
 
@@ -57,7 +55,7 @@ class Object(object):
 
         # Populate from kwargs
         """:type: dict[str, Field]"""
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             field = self._fields.get(key, None)
             if field:
                 key = field.parse_name
@@ -111,7 +109,7 @@ class Object(object):
     @classmethod
     def _parse_dict_to_python(cls, raw_parse_dict):
         result = {}
-        for field_name, value in six.iteritems(raw_parse_dict):
+        for field_name, value in raw_parse_dict.items():
             # noinspection PyProtectedMember
             field = cls._fields_parse.get(field_name, None)
             if field:
@@ -167,7 +165,7 @@ class Object(object):
 
             # Update object
             payload = {}
-            for modified_key, original_value in six.iteritems(self._modified_content):
+            for modified_key, original_value in self._modified_content.items():
                 current_value = self.get(modified_key)
                 if original_value != current_value:
                     payload[modified_key] = current_value
@@ -184,7 +182,7 @@ class Object(object):
 
         # Convert Python obj in payload to Parse obj
         final_payload = {}
-        for key, value in six.iteritems(payload):
+        for key, value in payload.items():
             field = self._fields_parse.get(key, None)
             if field:
                 value = field.to_parse(value)
@@ -224,29 +222,25 @@ class Object(object):
         """
         :rtype: collections.Iterable[str]
         """
-        for key in self._content:
-            yield key
+        return self._content.__iter__()
 
     def items(self):
         """
         :rtype: collections.Iterable[(str, object)]
         """
-        for kv_pair in six.iteritems(self._content):
-            yield kv_pair
+        return self._content.items()
 
     def keys(self):
         """
         :rtype: collections.Iterable[str]
         """
-        for key in six.iterkeys(self._content):
-            yield key
+        return self._content.keys()
 
     def values(self):
         """
         :rtype: collections.Iterable[object]
         """
-        for value in six.itervalues(self._content):
-            yield value
+        return self._content.values()
 
     def update(self, other=None, **kwargs):
         """
@@ -254,7 +248,7 @@ class Object(object):
         """
         update_dict = other or {}
 
-        for field_name, value in six.iteritems(kwargs):
+        for field_name, value in kwargs.items():
             field = self._fields.get(field_name, None)
             if field:
                 key = field.parse_name
@@ -262,7 +256,7 @@ class Object(object):
                 key = field_name
             update_dict[key] = value
 
-        for field_name, field in six.iteritems(self._fields_parse):
+        for field_name, field in self._fields_parse.items():
             if field.readonly and field.parse_name in update_dict:
                 raise KeyError('{} is a readonly field.'.format(field.parse_name))
 

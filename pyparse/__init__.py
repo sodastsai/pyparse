@@ -14,14 +14,12 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 import os
-import six
+
 from pyparse.utils.lang import SingletonBase
 
 
-@six.add_metaclass(SingletonBase)
-class ParsePy(object):
+class ParsePy(object, metaclass=SingletonBase):
 
     def __init__(self):
         self._application_id = None
@@ -40,6 +38,7 @@ class ParsePy(object):
         >>> os.environ['PARSE_APPLICATION_ID'] = 'TEST_ID'
         >>> pyparse.application_id == 'TEST_ID'
         True
+        >>> del os.environ['PARSE_APPLICATION_ID']
 
         :return: the application id string
         :rtype: str
@@ -55,6 +54,7 @@ class ParsePy(object):
         >>> os.environ['PARSE_REST_API_KEY'] = 'TEST_API_KEY'
         >>> pyparse.rest_api_key == 'TEST_API_KEY'
         True
+        >>> del os.environ['PARSE_REST_API_KEY']
 
         :return: the rest api key string
         :rtype: str
@@ -70,6 +70,7 @@ class ParsePy(object):
         >>> os.environ['PARSE_MASTER_KEY'] = 'TEST_MASTER_KEY'
         >>> pyparse.master_key == 'TEST_MASTER_KEY'
         True
+        >>> del os.environ['PARSE_MASTER_KEY']
 
         :return: the master key string
         :rtype: str

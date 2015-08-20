@@ -14,11 +14,9 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
 from pyparse.core.data.types import datetime_to_parse_dict
 from pyparse.request import request
 from pyparse.utils.strings import snakify
-import six
 
 
 class Analytics(object):
@@ -36,7 +34,7 @@ class Analytics(object):
         if len(dimensions) > 8:
             raise ValueError('Parse only support at most 8 dimensions per event')
 
-        dimensions = {snakify(key): snakify(six.text_type(value)) for key, value in six.iteritems(dimensions)}
+        dimensions = {snakify(key): snakify(str(value)) for key, value in dimensions.items()}
         event = snakify(event)
 
         arguments = {}

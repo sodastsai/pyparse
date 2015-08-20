@@ -14,11 +14,12 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals, division, absolute_import, print_function
-from pyparse import pyparse
 from copy import copy
 import json
+
 import requests
+
+from pyparse import pyparse
 from pyparse.error import ParseInternalServerError, ParseError
 
 
