@@ -18,7 +18,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from copy import deepcopy
 from pyparse.core.data.base import ObjectBase
 from pyparse.core.data.fields import Field, AutoDateTimeField
-from pyparse.core.data.types import guess_to_python, guess_to_parse
+from pyparse.core.data.types import ParseConvertible
 from pyparse.request import request
 import six
 from pyparse.core.data.query import Query
@@ -117,7 +117,7 @@ class Object(object):
             if field:
                 value = field.to_python(value)
             else:
-                value = guess_to_python(value)
+                value = ParseConvertible.guess_to_python(value)
             result[field_name] = value
         return result
 
@@ -189,7 +189,7 @@ class Object(object):
             if field:
                 value = field.to_parse(value)
             else:
-                value = guess_to_parse(value)
+                value = ParseConvertible.guess_to_parse(value)
             final_payload[key] = value
         payload = final_payload
 

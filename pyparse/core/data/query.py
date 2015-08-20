@@ -18,7 +18,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import json
 
 from copy import copy
-from pyparse.core.data.types import guess_to_parse
+from pyparse.core.data.types import ParseConvertible
 from pyparse.core.data.object import ObjectBase
 from pyparse.request import request
 import six
@@ -104,7 +104,7 @@ class Query(object):
                     key = field.parse_name
                     value_to_parse = field.to_parse
                 else:
-                    value_to_parse = guess_to_parse
+                    value_to_parse = ParseConvertible.guess_to_parse
 
                 if isinstance(value, (list, tuple)):
                     value = list(map(value_to_parse, value))

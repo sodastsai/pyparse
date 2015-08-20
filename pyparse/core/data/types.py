@@ -16,8 +16,23 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import datetime
+import six
+
+_registered_parse_convertible_types = {}
 
 
+class ParseConvertibleType(type):
+
+    def __init__(cls, class_name, bases, class_dict):
+        super(ParseConvertibleType, cls).__init__(class_name, bases, class_dict)
+
+        if class_name != 'ParseConvertible':
+            parse_type_name_func = getattr(cls, 'parse_type_name', None)
+            if parse_type_name_func:
+                _registered_parse_convertible_types[parse_type_name_func()] = cls
+
+
+@six.add_metaclass(ParseConvertibleType)
 class ParseConvertible(object):
 
     def to_parse(self):
@@ -27,9 +42,33 @@ class ParseConvertible(object):
     def to_python(cls, parse_dict):
         raise NotImplementedError('Implement how this type convet from Parse\'s representation.')
 
+    @classmethod
+    def parse_type_name(cls):
+        raise NotImplementedError('Should return the __type value.')
 
-# =========== GeoPoint ==========
+    @staticmethod
+    def guess_to_python(value):
+        if isinstance(value, dict):
+            try:
+                klass = _registered_parse_convertible_types[value['__type']]
+            except KeyError:
+                pass
+            else:
+                return klass.to_python(value)
+        return value
 
+    @staticmethod
+    def guess_to_parse(value):
+        if isinstance(value, datetime.datetime):
+            # Since createdAt and updatedAt won't use this guess_to_parse, it's safe to return dict directly
+            return datetime_to_parse_dict(value)
+        elif isinstance(value, ParseConvertible):
+            return value.to_parse()
+
+        return value
+
+
+# == GeoPoint ==========================================================================================================
 
 class GeoPoint(ParseConvertible):
     """
@@ -55,20 +94,24 @@ class GeoPoint(ParseConvertible):
 
     def to_parse(self):
         return {
-            '__type': 'GeoPoint',
+            '__type': self.parse_type_name(),
             'latitude': self.latitude,
             'longitude': self.longitude,
         }
 
     @classmethod
     def to_python(cls, parse_dict):
-        if parse_dict['__type'] != 'GeoPoint':
+        if parse_dict['__type'] != cls.parse_type_name():
             raise TypeError('This is not a GeoPoint dict.')
 
         return cls(parse_dict['latitude'], parse_dict['longitude'])
 
+    @classmethod
+    def parse_type_name(cls):
+        return 'GeoPoint'
 
-# =========== datetime ==========
+
+# == datetime ==========================================================================================================
 
 class UTC(datetime.tzinfo):
 
@@ -153,25 +196,16 @@ def datetime_dict_to_python(parse_dict):
     return datetime_str_to_python(parse_dict['iso'])
 
 
-# =========== guess ==========
+class _DatetimeParseConverible(ParseConvertible):
 
+    @classmethod
+    def to_python(cls, parse_dict):
+        return datetime_dict_to_python(parse_dict)
 
-def guess_to_python(value):
-    if isinstance(value, dict):
-        value_type = value.get('__type', None)
-        if value_type == 'GeoPoint':
-            return GeoPoint.to_python(value)
-        elif value_type == 'Date':
-            return datetime_dict_to_python(value)
+    @classmethod
+    def parse_type_name(cls):
+        return 'Date'
 
-    return value
-
-
-def guess_to_parse(value):
-    if isinstance(value, datetime.datetime):
-        # Since createdAt and updatedAt won't use this guess_to_parse, it's safe to return dict directly
-        return datetime_to_parse_dict(value)
-    elif isinstance(value, ParseConvertible):
-        return value.to_parse()
-
-    return value
+    def to_parse(self):
+        # This class is just a wrapper for `guess_to_python`
+        return None
