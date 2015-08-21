@@ -25,7 +25,7 @@ from pyparse.request import request_parse
 class Query(object):
 
     def __init__(self, object_class=None, class_name=None):
-        assert object_class or class_name, 'You must assign at least one of ObjectClass and ClassName'
+        assert bool(object_class) ^ bool(class_name), 'You must assign either ObjectClass or ClassName.'
 
         self._object_class = object_class or ObjectBase.anonymous_class(class_name)
         # noinspection PyProtectedMember
@@ -35,12 +35,13 @@ class Query(object):
         self._order_list = []
         self._where_dict = {}
 
-        self._evaluated = False
-        self._contents = []
+        # self._evaluated = False
+        self._contents = None
+        """:type: list[pyparse.core.data.object.Object] | None"""
 
     @property
     def evaluated(self):
-        return self._evaluated
+        return self._contents is not None
 
     def __str__(self):
         return repr(self)
@@ -68,7 +69,7 @@ class Query(object):
         :return:
         :rtype: Query
         """
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         return self
 
     _filter_operators = ('lt', 'lte', 'gt', 'gte', 'ne', 'in', 'nin', 'exists', 'select', 'dont_select', 'all', 'exact',
@@ -80,22 +81,20 @@ class Query(object):
         :return:
         :rtype: Query
         """
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
 
         for key, value in kwargs.items():
             # Find keypaths and operators
             key_paths = key.split('__')
             if key_paths[-1] in self._filter_operators:
-                operator = key_paths[-1]
-                key_paths = key_paths[:-1]
+                *key_paths, operator = key_paths
             else:
-                key_paths = key_paths
                 operator = 'exact'
 
             if len(key_paths) == 1:
                 key = key_paths[0]
 
-                # Check field
+                # Check field for finding value transformer (to parse)
                 # noinspection PyProtectedMember
                 field = self._object_class._fields.get(key, None)
                 if field:
@@ -104,11 +103,13 @@ class Query(object):
                 else:
                     value_to_parse = ParseConvertible.guess_to_parse
 
+                # Transform values
                 if isinstance(value, (list, tuple)):
                     value = list(map(value_to_parse, value))
                 else:
                     value = value_to_parse(value)
 
+                # Update arguments dict
                 if operator == 'exact':
                     self._where_dict[key] = value
                 else:
@@ -117,6 +118,9 @@ class Query(object):
                         key_query = {}
                         self._where_dict[key] = key_query
                     key_query['${}'.format(operator)] = value
+            else:
+                # TODO: relational?
+                pass
 
         return self
 
@@ -125,7 +129,7 @@ class Query(object):
         :return:
         :rtype: Query
         """
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         self._order_list += args
         return self
 
@@ -134,7 +138,7 @@ class Query(object):
         :return:
         :rtype: Query
         """
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(limit, int) and 1 <= limit <= 1000, 'limit should be an integer between 1 and 1,000'
         self._arguments['limit'] = limit
         return self
@@ -144,7 +148,7 @@ class Query(object):
         :return:
         :rtype: Query
         """
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         assert isinstance(offset, int) and offset > 0, 'offset should be a positive integer'
         self._arguments['skip'] = offset
         return self
@@ -172,29 +176,26 @@ class Query(object):
     # Evaluate
 
     def __len__(self):
-        if not self.evaluated:
-            self.fetch()
-        return len(self._contents)
+        return len(self.contents)
 
     def __iter__(self):
         """
-        :return:
-        :rtype: collections.Iterable
+        :rtype: collections.Iterable[pyparse.core.data.object.Object]
         """
-        if not self.evaluated:
-            self.fetch()
-        for parse_object in self._contents:
-            yield parse_object
+        return self.contents.__iter__()
 
     @property
     def contents(self):
+        """
+        :rtype: list[pyparse.core.data.object.Object]
+        """
         if not self.evaluated:
             self.fetch()
 
         return self._contents
 
     def fetch(self):
-        assert not self._evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
+        assert not self.evaluated, 'A {} object is immutable after evaluated'.format(self.__class__.__name__)
         contents = request_parse('get', self.request_path, arguments=self.get_arguments())['results']
 
         if self._object_class:

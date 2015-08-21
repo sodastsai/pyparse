@@ -24,6 +24,9 @@ from pyparse.core.data.query import Query
 
 
 class Object(object, metaclass=ObjectBase):
+    """
+    key: parse_key
+    """
 
     # Field
 
@@ -53,15 +56,8 @@ class Object(object, metaclass=ObjectBase):
         self._content = deepcopy(content) or {}
         """:type: dict"""
 
-        # Populate from kwargs
-        """:type: dict[str, Field]"""
-        for key, value in kwargs.items():
-            field = self._fields.get(key, None)
-            if field:
-                key = field.parse_name
-            self._content[key] = value
-
-        self._modified_content = {}
+        self._update(kwargs, check_readonly=False, update_dirty_state=False)
+        self._original_value_of_modified_content = {}
 
     def __str__(self):
         return repr(self)
@@ -74,18 +70,22 @@ class Object(object, metaclass=ObjectBase):
     @property
     def dirty(self):
         """:type: bool"""
-        return bool(self._modified_content)
+        return len(self._original_value_of_modified_content) != 0
 
     def get(self, key):
         return self._content[key] if key in self._content else None
 
     def set(self, key, value):
-        field = self._fields_parse.get(key, None)
-        if field and field.readonly:
-            raise KeyError('{} is a readonly field.'.format(key))
+        self._set(key, value)
 
-        if key not in self._modified_content:
-            self._modified_content[key] = self.get(key)
+    def _set(self, key, value, check_readonly=True):
+        if check_readonly:
+            field = self._fields_parse.get(key, None)
+            if field and field.readonly:
+                raise KeyError('{} is a readonly field.'.format(key))
+
+        if key not in self._original_value_of_modified_content:
+            self._original_value_of_modified_content[key] = self.get(key)
 
         if value is not None:
             self._content[key] = value
@@ -97,29 +97,18 @@ class Object(object, metaclass=ObjectBase):
     class_name = None
 
     @classmethod
-    def from_parse(cls, raw_parse_object):
+    def from_parse(cls, raw_parse_dict):
         """
-        :type raw_parse_object: dict
+        :type raw_parse_dict: dict
         :rtype: Object
         """
-        instance = cls()
-        instance._content.update(cls._parse_dict_to_python(raw_parse_object))
-        return instance
+        return cls(cls._parse_dict_to_python_value_dict(raw_parse_dict))
 
     @classmethod
-    def _parse_dict_to_python(cls, raw_parse_dict):
-        result = {}
-        for field_name, value in raw_parse_dict.items():
-            # noinspection PyProtectedMember
-            field = cls._fields_parse.get(field_name, None)
-            if field:
-                value = field.to_python(value)
-            else:
-                value = ParseConvertible.guess_to_python(value)
-            result[field_name] = value
-        return result
+    def _parse_dict_to_python_value_dict(cls, raw_parse_dict):
+        return {key: cls._to_python_converter(key)(value) for key, value in raw_parse_dict.items()}
 
-    # Field Action
+    # Fields
 
     def increment(self, field_parse_name, step=1):
         if self.object_id:
@@ -130,9 +119,20 @@ class Object(object, metaclass=ObjectBase):
                 }
             }
             response = request_parse('put', self._remote_path(self.object_id), arguments=arguments)
-            self._content.update(self._parse_dict_to_python(response))
+            self._update(self._parse_dict_to_python_value_dict(response),
+                         check_readonly=False, update_dirty_state=False)
         else:
             self.set(field_parse_name, self.get(field_parse_name)+step)
+
+    @classmethod
+    def _to_parse_converter(cls, field_name):
+        return cls._fields_parse[field_name].to_parse \
+            if field_name in cls._fields_parse else ParseConvertible.guess_to_parse
+
+    @classmethod
+    def _to_python_converter(cls, field_name):
+        return cls._fields_parse[field_name].to_python \
+            if field_name in cls._fields_parse else ParseConvertible.guess_to_python
 
     # Remote
 
@@ -165,10 +165,10 @@ class Object(object, metaclass=ObjectBase):
 
             # Update object
             payload = {}
-            for modified_key, original_value in self._modified_content.items():
-                current_value = self.get(modified_key)
-                if original_value != current_value:
-                    payload[modified_key] = current_value
+            for modified_key, original_value in self._original_value_of_modified_content.items():
+                current_modified_value = self.get(modified_key)
+                if original_value != current_modified_value:
+                    payload[modified_key] = current_modified_value
             if not payload:
                 return
 
@@ -181,25 +181,17 @@ class Object(object, metaclass=ObjectBase):
             verb = 'post'
 
         # Convert Python obj in payload to Parse obj
-        final_payload = {}
-        for key, value in payload.items():
-            field = self._fields_parse.get(key, None)
-            if field:
-                value = field.to_parse(value)
-            else:
-                value = ParseConvertible.guess_to_parse(value)
-            final_payload[key] = value
-        payload = final_payload
+        payload = {key: self._to_parse_converter(key)(value) for key, value in payload.items()}
 
         response = request_parse(verb, remote_path, arguments=payload)
         if self.object_id:
             # Updated - clean up
-            self._modified_content = {}
+            self._original_value_of_modified_content = {}
         else:
             # New created - update info
             response['updatedAt'] = response['createdAt']
 
-        self._content.update(self._parse_dict_to_python(response))
+        self._content.update(self._parse_dict_to_python_value_dict(response))
 
     def delete(self):
         if not self.object_id:
@@ -243,11 +235,12 @@ class Object(object, metaclass=ObjectBase):
         return self._content.values()
 
     def update(self, other=None, **kwargs):
+        self._update(other=other, **kwargs)
+
+    def _update(self, update_dict, check_readonly=True, update_dirty_state=True, **kwargs):
         """
         :type other: dict
         """
-        update_dict = other or {}
-
         for field_name, value in kwargs.items():
             field = self._fields.get(field_name, None)
             if field:
@@ -256,11 +249,16 @@ class Object(object, metaclass=ObjectBase):
                 key = field_name
             update_dict[key] = value
 
-        for field_name, field in self._fields_parse.items():
-            if field.readonly and field.parse_name in update_dict:
-                raise KeyError('{} is a readonly field.'.format(field.parse_name))
+        if check_readonly:
+            for field_name, field in self._fields_parse.items():
+                if field.readonly and field.parse_name in update_dict:
+                    raise KeyError('{} is a readonly field.'.format(field.parse_name))
 
-        return self._content.update(update_dict)
+        if update_dirty_state:
+            for key, value in update_dict.items():
+                self._set(key, value, check_readonly=check_readonly)
+        else:
+            return self._content.update(update_dict)
 
     @property
     def as_dict(self):
