@@ -51,6 +51,10 @@ class Field(object):
         return parse_value
 
 
+class ListField(Field):
+    pass
+
+
 class AutoDateTimeField(Field):
 
     @staticmethod

@@ -34,7 +34,7 @@ class Object(object, metaclass=ObjectBase):
     created_at = AutoDateTimeField(readonly=True)
     updated_at = AutoDateTimeField(readonly=True)
 
-    _fields = None
+    _fields_python = None
     """:type: dict[str, Field]"""
     _fields_parse = None
     """:type: dict[str, Field]"""
@@ -53,6 +53,7 @@ class Object(object, metaclass=ObjectBase):
         return cls(content=another_object._content)
 
     def __init__(self, content=None, **kwargs):
+        # Store Parse content
         self._content = deepcopy(content) or {}
         """:type: dict"""
 
@@ -73,6 +74,7 @@ class Object(object, metaclass=ObjectBase):
         return len(self._original_value_of_modified_content) != 0
 
     def get(self, key):
+        # `key` should be parse key
         return self._content[key] if key in self._content else None
 
     def set(self, key, value):
@@ -133,6 +135,12 @@ class Object(object, metaclass=ObjectBase):
     def _to_python_converter(cls, field_name):
         return cls._fields_parse[field_name].to_python \
             if field_name in cls._fields_parse else ParseConvertible.guess_to_python
+
+    def _parse_key_from_python_key(self, python_key):
+        return self._fields_python[python_key].parse_name
+
+    def _python_key_from_parse_key(self, parse_key):
+        return self._fields_parse[parse_key].python_name
 
     # Remote
 
@@ -199,7 +207,21 @@ class Object(object, metaclass=ObjectBase):
         request_parse('delete', self._remote_path(self.object_id))
         del self._content['objectId']
 
-    # Dict
+    # Object - Use Python Key/Attribute
+
+    def __getattribute__(self, key):
+        if key != '_fields_python' and key in self._fields_python:
+            return self.get(self._parse_key_from_python_key(key))
+        else:
+            return super(Object, self).__getattribute__(key)
+
+    def __setattr__(self, key, value):
+        if key in self._fields_parse:
+            return self.set(self._parse_key_from_python_key(key), value)
+        else:
+            return super(Object, self).__setattr__(key, value)
+
+    # Dict - Use Parse Key
 
     def __getitem__(self, key):
         return self.get(key)
@@ -242,7 +264,7 @@ class Object(object, metaclass=ObjectBase):
         :type other: dict
         """
         for field_name, value in kwargs.items():
-            field = self._fields.get(field_name, None)
+            field = self._fields_python.get(field_name, None)
             if field:
                 key = field.parse_name
             else:

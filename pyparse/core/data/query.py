@@ -96,7 +96,7 @@ class Query(object):
 
                 # Check field for finding value transformer (to parse)
                 # noinspection PyProtectedMember
-                field = self._object_class._fields.get(key, None)
+                field = self._object_class._fields_python.get(key, None)
                 if field:
                     key = field.parse_name
                     value_to_parse = field.to_parse

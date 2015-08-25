@@ -29,7 +29,7 @@ class ObjectBase(type):
 
     def __new__(mcs, class_name, bases, class_dict):
         # Find field objects out from class_dict
-        fields = {}
+        fields_python = {}
         """:type: dict[str, Field]"""
         fields_parse = {}
         """:type: dict[str, Field]"""
@@ -40,11 +40,11 @@ class ObjectBase(type):
                 # noinspection PyProtectedMember
                 attr_obj._parse_name = attr_obj._parse_name or camelcase(attr_name)
 
-                fields[attr_obj.python_name] = attr_obj
+                fields_python[attr_obj.python_name] = attr_obj
                 fields_parse[attr_obj.parse_name] = attr_obj
             else:
                 final_class_dict[attr_name] = attr_obj
-        final_class_dict['_fields'] = fields
+        final_class_dict['_fields_python'] = fields_python
         final_class_dict['_fields_parse'] = fields_parse
 
         # Update fields from bases
@@ -54,7 +54,7 @@ class ObjectBase(type):
             for base in bases:
                 if issubclass(base, Object):
                     # noinspection PyProtectedMember
-                    final_class_dict['_fields'].update(base._fields)
+                    final_class_dict['_fields_python'].update(base._fields_python)
                     # noinspection PyProtectedMember
                     final_class_dict['_fields_parse'].update(base._fields_parse)
 
@@ -63,7 +63,7 @@ class ObjectBase(type):
         final_class_dict['is_anonymous_class'] = False
 
         # Add fields back as value property
-        for field_name, field in fields.items():
+        for field_name, field in fields_python.items():
             final_class_dict[field_name] = property(
                 fget=mcs._getter(field),
                 fset=mcs._setter(field) if not field.readonly else None
@@ -98,7 +98,7 @@ class ObjectBase(type):
         klass = super(ObjectBase, cls if not class_name else cls.anonymous_class(class_name)).__call__(*args, **kwargs)
 
         # noinspection PyProtectedMember
-        fields = klass._fields
+        fields = klass._fields_python
         """:type: dict[str, Field]"""
 
         # Setup incrementable fields
